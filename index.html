@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>SILVER DIGITAL - TRỢ LÝ CỦA ÔNG BÀ</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="script" href="script.js" />
+    <meta name="theme-color" content="#007bff" />
+
+    <style>
+
+        :root{
+            --bg-page: #111217;
+            --phone-bg: linear-gradient(180deg,#ffffff,#fbfbfd);
+            --primary: #007bff;
+            --primary-2: #0056d6;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --muted: #6c757d;
+            --glass: rgba(255,255,255,0.06);
+            --glass-strong: rgba(255,255,255,0.12);
+        }
+
+
+        body{
+            margin:0;
+            height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-family: Arial, sans-serif;
+            background: radial-gradient(1200px 600px at 10% 10%, rgba(0,123,255,0.06), transparent),
+                        radial-gradient(1000px 500px at 90% 90%, rgba(40,167,69,0.03), transparent),
+                        var(--bg-page);
+            overflow:hidden;
+        }
+
+
+        .dien-thoai{
+            width:100%;
+            max-width:460px;
+            height:94vh;
+            background: var(--phone-bg);
+            border-radius:16px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.6);
+            display:flex;
+            flex-direction:column;
+            overflow:hidden;
+            border:1px solid rgba(0,0,0,0.08);
+            position:relative;
+            transform: translateZ(0);
+        }
+
+
+        .tieu-de-trang{
+            padding:14px;
+            text-align:center;
+            font-weight:bold;
+            color:white;
+            background: linear-gradient(90deg,var(--primary),var(--primary-2));
+            position:relative;
+            overflow:hidden;
+        }
+        .tieu-de-trang::after{
+            content:"";
+            position:absolute;
+            left:-40%;
+            top:-30%;
+            width:200%;
+            height:200%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), transparent 10%),
+                        radial-gradient(circle at 70% 70%, rgba(255,255,255,0.03), transparent 10%);
+            transform: rotate(12deg);
+            animation: slowMove 8s linear infinite;
+            pointer-events:none;
+        }
+        @keyframes slowMove{
+            0%{ transform: translateX(-10px) rotate(12deg); }
+            50%{ transform: translateX(10px) rotate(12deg); }
+            100%{ transform: translateX(-10px) rotate(12deg); }
+        }
+
+
+        .man-hinh{
+            flex:1;
+            padding:14px;
+            display:none;
+            overflow:auto;
+            transition: opacity 260ms ease, transform 260ms ease;
+            opacity:0;
+            transform: translateY(8px);
+        }
+        .man-hinh.dang-hien-thi{
+            display:block;
+            opacity:1;
+            transform: translateY(0);
+        }
+
+
+        .nut-bam{
+            position:relative;
+            overflow:hidden;
+            width:100%;
+            padding:12px;
+            margin:10px 0;
+            border-radius:10px;
+            border:none;
+            cursor:pointer;
+            font-weight:bold;
+            font-size:16px;
+            transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+            background:#f0f0f0;
+        }
+        .nut-bam:active{ transform: translateY(2px); }
+        .nut-bam:hover{ filter:brightness(0.98); }
+
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 600ms linear;
+            background: rgba(255,255,255,0.6);
+            pointer-events:none;
+        }
+        @keyframes ripple {
+            to { transform: scale(6); opacity: 0; }
+        }
+
+        .nut-xanh{ background: var(--success); color:white; }
+        .nut-do{ background: var(--danger); color:white; }
+        .nut-vang{ background: var(--warning); color:#222; }
+
+
+        .tin-nhan-mau{
+            background: linear-gradient(180deg,#f8fbff,#eef6ff);
+            padding:10px;
+            border-radius:8px;
+            margin-bottom:10px;
+            border-left:6px solid var(--primary);
+            font-size:16px;
+            line-height:1.4;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+            transition: transform 220ms ease, opacity 220ms ease;
+        }
+        .tin-nhan-mau.hieu-ung{
+            transform: translateX(-6px);
+            opacity:0.98;
+        }
+
+        .menu-duoi{
+            height:56px;
+            display:flex;
+            border-top:1px solid rgba(0,0,0,0.06);
+            background: linear-gradient(180deg,#fff,#f7fbff);
+        }
+        .nut-menu{
+            flex:1;
+            text-align:center;
+            padding-top:14px;
+            cursor:pointer;
+            transition: background 160ms ease, color 160ms ease, transform 160ms;
+            user-select:none;
+        }
+        .nut-menu:hover{ transform: translateY(-2px); }
+        .nut-menu.chon{
+            color:var(--primary);
+            font-weight:bold;
+            background: linear-gradient(180deg,#fff,#f0f8ff);
+        }
+
+
+        .lop-nen-mo{
+            display:none;
+            position:absolute;
+            inset:0;
+            background: rgba(0,0,0,0.55);
+            z-index:9999;
+            justify-content:center;
+            align-items:center;
+            padding:18px;
+        }
+        .lop-nen-mo.show{ display:flex; animation: fadeIn 180ms ease; }
+        .hop-noi-dung{
+            width:86%;
+            padding:20px;
+            border-radius:14px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.78));
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+            text-align:center;
+            border: 3px solid rgba(255,255,255,0.6);
+            transform-origin:center;
+            animation: popIn 220ms ease;
+        }
+        @keyframes popIn{ from{ transform: scale(0.98); opacity:0 } to{ transform:scale(1); opacity:1 } }
+        @keyframes fadeIn{ from{ opacity:0 } to{ opacity:1 } }
+
+
+        .khung-chat{
+            height:330px;
+            background: linear-gradient(180deg,#f7fbff,#eef6ff);
+            border-radius:10px;
+            padding:10px;
+            overflow:auto;
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+            border:1px solid rgba(0,0,0,0.03);
+        }
+        .tin-nhan-bot{
+            background:white;
+            padding:10px;
+            border-radius:10px;
+            align-self:flex-start;
+            max-width:80%;
+            border:1px solid #e6e6e6;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.03);
+            opacity:0;
+            transform: translateY(6px);
+            animation: appearMsg 260ms ease forwards;
+            line-height:1.5;
+        }
+        .tin-nhan-nguoi{
+            background: linear-gradient(90deg,var(--primary),var(--primary-2));
+            color:white;
+            padding:10px;
+            border-radius:10px;
+            align-self:flex-end;
+            max-width:80%;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+            opacity:0;
+            transform: translateY(6px);
+            animation: appearMsg 260ms ease forwards;
+        }
+        @keyframes appearMsg{
+            to{ opacity:1; transform: translateY(0); }
+        }
+
+        .typing{
+            display:flex;
+            gap:6px;
+            align-items:center;
+            padding:8px 10px;
+            border-radius:10px;
+            background: rgba(0,0,0,0.04);
+            width:120px;
+        }
+        .dot{
+            width:8px;
+            height:8px;
+            background:#bbb;
+            border-radius:50%;
+            animation: blink 1s infinite;
+        }
+        .dot:nth-child(2){ animation-delay:0.15s }
+        .dot:nth-child(3){ animation-delay:0.3s }
+        @keyframes blink{
+            0%{ opacity:0.25; transform: translateY(0) }
+            50%{ opacity:1; transform: translateY(-4px) }
+            100%{ opacity:0.25; transform: translateY(0) }
+        }
+
+
+        #khu-vuc-cam-wrapper{ border-radius:10px; overflow:hidden; position:relative; }
+        .scan-frame{ position:absolute; top:50%; left:50%; width:220px; height:220px; transform:translate(-50%,-50%); pointer-events:none; }
+        .corner{ position:absolute; width:36px; height:36px; box-sizing:border-box; }
+        .corner.top-left{ top:0; left:0; border-top:5px solid var(--success); border-left:5px solid var(--success); border-top-left-radius:8px; }
+        .corner.top-right{ top:0; right:0; border-top:5px solid var(--success); border-right:5px solid var(--success); border-top-right-radius:8px; }
+        .corner.bottom-left{ bottom:0; left:0; border-bottom:5px solid var(--success); border-left:5px solid var(--success); border-bottom-left-radius:8px; }
+        .corner.bottom-right{ bottom:0; right:0; border-bottom:5px solid var(--success); border-right:5px solid var(--success); border-bottom-right-radius:8px; }
+
+        .tia-laser{
+            position:absolute;
+            left:5%;
+            width:90%;
+            height:3px;
+            background: linear-gradient(90deg, rgba(255,59,48,0), rgba(255,59,48,0.95), rgba(255,59,48,0));
+            box-shadow: 0 0 12px rgba(255,59,48,0.9), 0 0 24px rgba(255,59,48,0.6);
+            border-radius:2px;
+            animation: quet-laser 2.2s infinite ease-in-out;
+        }
+        @keyframes quet-laser{
+            0%{ top:10%; opacity:0.25 }
+            50%{ top:50%; opacity:1 }
+            100%{ top:90%; opacity:0.25 }
+        }
+
+        .nut-sos{
+            position:absolute;
+            bottom:74px;
+            left:50%;
+            transform:translateX(-50%);
+            width:86px;
+            height:86px;
+            border-radius:50%;
+            background:var(--danger);
+            color:white;
+            border:4px solid white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:bold;
+            z-index:1000;
+            box-shadow: 0 18px 40px rgba(220,53,69,0.28);
+            transition: transform 160ms ease;
+        }
+        .nut-sos.dang-keu{ animation: sosPulse 900ms infinite; box-shadow: 0 0 40px 8px rgba(220,53,69,0.85); }
+        @keyframes sosPulse{
+            0%{ transform: translateX(-50%) scale(1); }
+            50%{ transform: translateX(-50%) scale(1.08); }
+            100%{ transform: translateX(-50%) scale(1); }
+        }
+
+
+        /* ===== NÚT MICROPHONE ===== */
+        .nut-micro{
+            position:relative;
+            overflow:hidden;
+            width:52px;
+            height:44px;
+            border-radius:10px;
+            border:none;
+            cursor:pointer;
+            font-size:20px;
+            flex-shrink:0;
+            background: linear-gradient(135deg,#6c757d,#495057);
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            transition: transform 120ms ease, background 200ms ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .nut-micro:active{ transform: scale(0.94); }
+        .nut-micro.dang-nghe{
+            background: linear-gradient(135deg,#dc3545,#c0392b);
+            animation: nhipMicro 1s infinite;
+        }
+        @keyframes nhipMicro{
+            0%{ box-shadow: 0 0 0 0 rgba(220,53,69,0.7); }
+            70%{ box-shadow: 0 0 0 12px rgba(220,53,69,0); }
+            100%{ box-shadow: 0 0 0 0 rgba(220,53,69,0); }
+        }
+
+        /* Nhãn trạng thái giọng nói */
+        #trang-thai-giong-noi{
+            font-size:12px;
+            color: var(--muted);
+            text-align:center;
+            margin-top:5px;
+            min-height:16px;
+            transition: color 200ms;
+        }
+        #trang-thai-giong-noi.dang-nghe-text{
+            color: #dc3545;
+            font-weight:bold;
+        }
+
+        /* Khu vực nhập chat */
+        .khu-nhap-chat{
+            display:flex;
+            gap:5px;
+            margin-top:8px;
+            align-items:stretch;
+        }
+        .khu-nhap-chat input{
+            flex:1;
+            padding:10px;
+            border-radius:8px;
+            border:1.5px solid #ccc;
+            font-size:16px;
+            transition: border-color 200ms;
+            outline:none;
+        }
+        .khu-nhap-chat input:focus{
+            border-color: var(--primary);
+        }
+        .nut-gui-chat{
+            width:52px;
+            height:44px;
+            border-radius:8px;
+            border:none;
+            cursor:pointer;
+            background: linear-gradient(135deg,var(--success),#1e7e34);
+            color:white;
+            font-size:20px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-shrink:0;
+            box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+            transition: transform 120ms;
+        }
+        .nut-gui-chat:active{ transform: scale(0.94); }
+
+        /* Badge AI */
+        .badge-ai{
+            display:inline-block;
+            font-size:10px;
+            font-weight:bold;
+            background: linear-gradient(90deg,#6f42c1,#007bff);
+            color:white;
+            padding:2px 7px;
+            border-radius:20px;
+            margin-left:6px;
+            vertical-align:middle;
+            letter-spacing:0.5px;
+        }
+
+        @media (max-width:420px){
+            .dien-thoai{ border-radius:10px; height:98vh; }
+            .nut-sos{ width:72px; height:72px; }
+            .khung-chat{ height:270px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dien-thoai">
+        <div class="tieu-de-trang">SILVER DIGITAL</div>
+
+        <div id="nutSOS" class="nut-sos">SOS</div>
+
+        <div id="man-lua-dao" class="man-hinh dang-hien-thi">
+            <h3>Tập phân biệt tin nhắn</h3>
+            <p>Có tin nhắn mới gửi đến:</p>
+            <div class="tin-nhan-mau" id="noi-dung-tin"></div>
+            <button class="nut-bam nut-do" onclick="rippleClick(event); bamNut(true)">Nhấn vào xem</button>
+            <button class="nut-bam nut-xanh" onclick="rippleClick(event); bamNut(false)">Xóa tin nhắn</button>
+        </div>
+
+        <div id="man-qr" class="man-hinh">
+            <h3>Tập quét mã QR</h3>
+
+            <div id="khu-vuc-cam-wrapper" style="position: relative; width: 100%; height: 320px; border-radius: 10px; overflow: hidden; background: #000; margin-bottom: 10px;">
+                <div id="khu-vuc-cam" style="width: 100%; height: 100%;"></div>
+
+                <div id="scanner-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;">
+                    <div id="loi-nhac-qr" style="position:absolute; top:12px; width:100%; text-align:center; color:#ffeb3b; font-weight:bold; font-size:15px; background:rgba(0,0,0,0.45); padding:6px 0; border-radius:6px;">
+                        Hãy đưa mã QR vào giữa khung
+                    </div>
+
+                    <div class="scan-frame">
+                        <div class="corner top-left"></div>
+                        <div class="corner top-right"></div>
+                        <div class="corner bottom-left"></div>
+                        <div class="corner bottom-right"></div>
+
+                        <div class="tia-laser"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="nut-bam nut-vang" onclick="rippleClick(event); moCamera()">Bật Camera</button>
+            <p id="ket-qua-qr" style="word-break: break-all; font-weight: bold;">Chưa quét được gì...</p>
+        </div>
+
+        <div id="man-thuoc" class="man-hinh">
+            <h3>Nhắc uống thuốc</h3>
+            <input type="text" id="ten-thuoc" placeholder="Tên thuốc..." style="width:90%;padding:10px;margin-bottom:5px;font-size:16px;">
+            <input type="time" id="gio-uong" style="width:90%; padding:10px; margin-bottom:10px; font-size:16px;">
+            <button class="nut-bam nut-xanh" onclick="rippleClick(event); themThuoc()">Lưu lịch nhắc</button>
+            <div id="danh-sach-thuoc" style="margin-top:15px; font-size:18px;"></div>
+        </div>
+
+        <!-- ===== MÀN HÌNH TRỢ LÍ AI ===== -->
+        <div id="man-tam-giao" class="man-hinh">
+            <h3 style="margin-top:0;">Trợ lí ảo của ông bà </h3>
+            <div class="khung-chat" id="vung-chat">
+                <div class="tin-nhan-bot">
+                    🤖 Con chào ông bà ạ! Con là trợ lí ảo thông minh của ông bà, được hỗ trợ bởi GPT-4o mini. Ông bà muốn hỏi gì cứ nhắn hoặc <b>bấm nút 🎤 để nói</b> nhé ạ!
+                </div>
+            </div>
+            <div id="trang-thai-giong-noi">Bấm 🎤 để nói, AI sẽ trả lời ông bà</div>
+            <div class="khu-nhap-chat">
+                <input type="text" id="cau-hoi-ai" placeholder="Nhập câu hỏi hoặc bấm 🎤 để nói..." />
+                <button class="nut-micro" id="nut-micro-btn" onclick="batGiongNoi()" title="Nhấn để nói tiếng Việt">🎤</button>
+                <button class="nut-gui-chat" onclick="hoiTroLy()" title="Gửi câu hỏi">➤</button>
+            </div>
+        </div>
+
+        <div id="man-ngu" class="man-hinh">
+            <h3>Giấc ngủ vàng</h3>
+            <p>Hẹn giờ để trợ lý nhắc đi ngủ:</p>
+            <input type="time" id="gio-ngu-input" style="width:90%; padding:10px; margin-bottom:10px; font-size:16px;">
+            <button class="nut-bam nut-xanh" onclick="rippleClick(event); luuGioNgu()">Lưu giờ ngủ</button>
+            <div id="hien-thi-gio-ngu" style="margin-top:15px; font-size:18px;"></div>
+        </div>
+
+        <div class="menu-duoi">
+            <div class="nut-menu chon" onclick="doiTab('man-lua-dao', this)">🛡️ An toàn</div>
+            <div class="nut-menu" onclick="doiTab('man-qr', this)">📷 Quét mã</div>
+            <div class="nut-menu" onclick="doiTab('man-thuoc', this)">💊 Thuốc</div>
+            <div class="nut-menu" onclick="doiTab('man-tam-giao', this)">💬 Trợ lí ảo</div>
+            <div class="nut-menu" onclick="doiTab('man-ngu', this)">🌙 Ngủ</div>
+        </div>
+
+        <div id="thong-bao-gia" class="lop-nen-mo">
+            <div class="hop-noi-dung">
+                <div style="font-size:60px;">⚠️</div>
+                <h2 style="color:var(--danger); margin:10px 0; font-size:22px;">CẢNH BÁO NGUY HIỂM!</h2>
+                <p style="font-size:18px; font-weight:bold; color:#333;">Ông bà ơi, đừng bấm! Đây là lừa đảo đấy.</p>
+                <button class="nut-bam nut-xanh" onclick="rippleClick(event); dongThongBao()">Tôi đã hiểu</button>
+            </div>
+        </div>
+
+        <div id="thong-bao-an-toan" class="lop-nen-mo">
+            <div class="hop-noi-dung" style="border-color:var(--success);">
+                <div style="font-size:60px;">✅</div>
+                <h2 style="color:var(--success);">AN TOÀN!</h2>
+                <p>Đây là tin nhắn an toàn.</p>
+                <button class="nut-bam nut-xanh" onclick="rippleClick(event); dongThongBaoAnToan()">Đóng</button>
+            </div>
+        </div>
+
+        <div id="thong-bao-xoa-an-toan" class="lop-nen-mo">
+            <div class="hop-noi-dung" style="border-color:#6c757d;">
+                <div style="font-size:60px;">🗑️</div>
+                <h2 style="color:#6c757d;">ĐÃ XÓA</h2>
+                <p>Ông bà đã xóa tin nhắn.</p>
+                <button class="nut-bam nut-xanh" onclick="rippleClick(event); dongThongBaoXoaAnToan()">Đóng</button>
+            </div>
+        </div>
+
+        <div id="thong-bao-xoa-lua-dao" class="lop-nen-mo">
+            <div class="hop-noi-dung" style="border-color:var(--success);">
+                <div style="font-size:60px;">🌟</div>
+                <h2 style="color:var(--success);">RẤT TỐT!</h2>
+                <p>Tuyệt vời, ông bà đã xóa tin nhắn lừa đảo.</p>
+                <button class="nut-bam nut-xanh" onclick="rippleClick(event); dongThongBaoXoaLuaDao()">Đóng</button>
+            </div>
+        </div>
+
+        <div id="thong-bao-thuoc-hien-thi" class="lop-nen-mo">
+            <div class="hop-noi-dung" style="border-color:var(--success);">
+                <div style="font-size:60px;">💊</div>
+                <h2 style="color:var(--success);">ĐẾN GIỜ UỐNG THUỐC!</h2>
+                <p id="ten-thuoc-hien-thi"></p>
+                <button class="nut-bam nut-xanh" onclick="rippleClick(event); dongThongBaoThuoc()">Tôi đã uống thuốc rồi</button>
+            </div>
+        </div>
+
+        <div id="thong-bao-qr" class="lop-nen-mo">
+            <div class="hop-noi-dung" style="border-color:var(--success);">
+                <div style="font-size:60px;">📸</div>
+                <h2 style="color:var(--success);">QUÉT THÀNH CÔNG!</h2>
+                <p id="noi-dung-qr-thanh-cong" style="font-size:16px; word-break:break-all;"></p>
+                <button class="nut-bam nut-xanh" onclick="rippleClick(event); dongThongBaoQR()">Đóng</button>
+            </div>
+        </div>
+
+        <div id="thong-bao-ngu" class="lop-nen-mo">
+            <div class="hop-noi-dung" style="border-color:#17a2b8;">
+                <div style="font-size:60px;">🌙</div>
+                <h2 style="color:#17a2b8;">ĐẾN GIỜ ĐI NGỦ!</h2>
+                <p>Ông bà ơi, đến giờ đi ngủ rồi ạ. Ông bà chuẩn bị đi ngủ sớm cho khỏe nhé!</p>
+                <button class="nut-bam nut-xanh" onclick="rippleClick(event); dongThongBaoNgu()">Ông bà đi ngủ đây</button>
+            </div>
+        </div>
+
+    </div>
+
+
+    <canvas id="confetti-canvas" style="position:fixed; inset:0; pointer-events:none; z-index:20000;"></canvas>
+
+    <script>
+
+        var dsThuoc = JSON.parse(localStorage.getItem('danhSachThuoc')) || [];
+        var thuocDaNhac = {};
+        var tinNhanHienTai = null;
+        var mayQuet = null;
+        var dangXuLy = false;
+        var cameraDangChay = false;
+        var timerCanhBao = null;
+        let vietnameseVoice = null;
+        let loiNoiHienTai = null;
+        var gioDiNgu = localStorage.getItem('gioDiNgu') || "";
+        var ngayDaNhacNgu = "";
+
+        /* ===== OPENROUTER / OPENAI API CONFIG ===== */
+        const OR_API_KEY = "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";
+        const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
+        const OR_MODEL = "openai/gpt-4o-mini";
+        const SYSTEM_PROMPT = `Bạn là trợ lí ảo thân thiện tên Silver Digital, chuyên hỗ trợ người cao tuổi Việt Nam. 
+Quy tắc trả lời:
+- Xưng là "con", gọi người dùng là "ông bà"
+- Câu trả lời ngắn gọn, dễ hiểu, không dùng từ kỹ thuật khó
+- Luôn ân cần, nhẹ nhàng, quan tâm như con cháu trong nhà
+- Nếu hỏi về sức khỏe khẩn cấp, khuyên gọi 115 hoặc người thân ngay
+- Trả lời bằng tiếng Việt`;
+
+        /* ===== NHẬN DIỆN GIỌNG NÓI ===== */
+        var nhanDienGiong = null;
+        var dangNghe = false;
+
+        function khoiTaoNhanDienGiong(){
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(!SpeechRecognition){
+                document.getElementById('trang-thai-giong-noi').textContent = "Trình duyệt không hỗ trợ nhận diện giọng nói";
+                return false;
+            }
+            nhanDienGiong = new SpeechRecognition();
+            nhanDienGiong.lang = 'vi-VN';
+            nhanDienGiong.continuous = false;
+            nhanDienGiong.interimResults = true;
+            nhanDienGiong.maxAlternatives = 1;
+
+            nhanDienGiong.onstart = function(){
+                dangNghe = true;
+                var btn = document.getElementById('nut-micro-btn');
+                var label = document.getElementById('trang-thai-giong-noi');
+                btn.classList.add('dang-nghe');
+                btn.textContent = '⏹';
+                label.textContent = '🔴 Đang nghe... Ông bà nói đi ạ!';
+                label.classList.add('dang-nghe-text');
+            };
+
+            nhanDienGiong.onresult = function(event){
+                var ketQua = '';
+                for(var i = event.resultIndex; i < event.results.length; i++){
+                    ketQua += event.results[i][0].transcript;
+                }
+                document.getElementById('cau-hoi-ai').value = ketQua;
+                if(event.results[event.results.length-1].isFinal){
+                    document.getElementById('trang-thai-giong-noi').textContent = '✅ Đã nhận: "' + ketQua + '"';
+                }
+            };
+
+            nhanDienGiong.onerror = function(event){
+                var btn = document.getElementById('nut-micro-btn');
+                var label = document.getElementById('trang-thai-giong-noi');
+                btn.classList.remove('dang-nghe');
+                btn.textContent = '🎤';
+                dangNghe = false;
+                if(event.error === 'not-allowed'){
+                    label.textContent = '❌ Ông bà cần cho phép dùng microphone ạ';
+                } else if(event.error === 'no-speech'){
+                    label.textContent = '⚠️ Con chưa nghe thấy gì, ông bà thử lại nhé';
+                } else {
+                    label.textContent = '⚠️ Lỗi nhận giọng nói, thử lại ạ';
+                }
+                label.classList.remove('dang-nghe-text');
+            };
+
+            nhanDienGiong.onend = function(){
+                var btn = document.getElementById('nut-micro-btn');
+                var label = document.getElementById('trang-thai-giong-noi');
+                btn.classList.remove('dang-nghe');
+                btn.textContent = '🎤';
+                dangNghe = false;
+                var vanBan = document.getElementById('cau-hoi-ai').value.trim();
+                if(vanBan){
+                    label.textContent = 'Bấm ➤ để gửi hoặc 🎤 để nói lại';
+                    label.classList.remove('dang-nghe-text');
+                } else {
+                    label.textContent = 'Bấm 🎤 để nói, AI sẽ trả lời ông bà';
+                    label.classList.remove('dang-nghe-text');
+                }
+            };
+
+            return true;
+        }
+
+        function batGiongNoi(){
+            if(!nhanDienGiong){
+                var ok = khoiTaoNhanDienGiong();
+                if(!ok) return;
+            }
+            if(dangNghe){
+                nhanDienGiong.stop();
+                return;
+            }
+            document.getElementById('cau-hoi-ai').value = '';
+            try{
+                nhanDienGiong.start();
+            } catch(e){
+                nhanDienGiong = null;
+                khoiTaoNhanDienGiong();
+                setTimeout(()=> nhanDienGiong && nhanDienGiong.start(), 200);
+            }
+        }
+
+        /* ===== GỌI OPENROUTER API (tương thích OpenAI) ===== */
+        async function goiGeminiAPI(cauHoi){
+            var body = {
+                model: OR_MODEL,
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user",   content: cauHoi }
+                ],
+                temperature: 0.7,
+                max_tokens: 400
+            };
+            var res = await fetch(OR_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + OR_API_KEY,
+                    'HTTP-Referer': 'https://silverdigital.app',
+                    'X-Title': 'Silver Digital'
+                },
+                body: JSON.stringify(body)
+            });
+            if(!res.ok){
+                var errData = await res.json().catch(()=>({}));
+                throw new Error(errData.error && errData.error.message ? errData.error.message : 'HTTP ' + res.status);
+            }
+            var data = await res.json();
+            return data.choices[0].message.content.trim();
+        }
+
+        async function phantichVaDatLich(cauHoi, vungChat){
+            try{
+                var body = {
+                    model: OR_MODEL,
+                    messages: [
+                        { role: "system", content: `Phân tích câu người dùng và trả về JSON thuần túy (không giải thích).
+
+Nếu muốn đặt lịch UỐNG THUỐC (phải có đủ tên thuốc VÀ giờ cụ thể dạng số):
+{"loai":"thuoc","ten":"tên thuốc","gio":"HH:MM"}
+
+Nếu muốn đặt lịch ĐI NGỦ (phải có giờ cụ thể dạng số):
+{"loai":"ngu","gio":"HH:MM"}
+
+Mọi trường hợp khác: {"loai":"khong"}
+
+Giờ phải là format 24h HH:MM. Thiếu giờ hoặc thiếu tên thuốc → trả "khong".` },
+                        { role: "user", content: cauHoi }
+                    ],
+                    temperature: 0,
+                    max_tokens: 60
+                };
+                var res = await fetch(OR_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + OR_API_KEY,
+                        'HTTP-Referer': 'https://silverdigital.app',
+                        'X-Title': 'Silver Digital'
+                    },
+                    body: JSON.stringify(body)
+                });
+                var data = await res.json();
+                var text = data.choices[0].message.content.trim();
+                var match = text.match(/\{[\s\S]*?\}/);
+                if(!match) return;
+                var intent = JSON.parse(match[0]);
+
+                if(intent.loai === 'thuoc' && intent.ten && intent.gio){
+                    dsThuoc.push({ ten: intent.ten, gio: intent.gio });
+                    localStorage.setItem('danhSachThuoc', JSON.stringify(dsThuoc));
+                    hienThiThuoc();
+                    var notEl = document.createElement('div');
+                    notEl.className = 'tin-nhan-bot';
+                    notEl.style.borderLeft = '4px solid #28a745';
+                    notEl.style.background = '#f0fff4';
+                    notEl.innerHTML = '🔔 <b>Con đã lưu lịch uống thuốc cho ông bà rồi ạ!</b><br>💊 Thuốc: <b>' + escapeHtml(intent.ten) + '</b> — Lúc <b>' + intent.gio + '</b>';
+                    vungChat.appendChild(notEl);
+                    vungChat.scrollTop = vungChat.scrollHeight;
+                    noi('Con đã lưu lịch uống thuốc ' + intent.ten + ' lúc ' + intent.gio + ' cho ông bà rồi ạ!');
+                } else if(intent.loai === 'ngu' && intent.gio){
+                    gioDiNgu = intent.gio;
+                    localStorage.setItem('gioDiNgu', gioDiNgu);
+                    hienThiGioNgu();
+                    var notElNgu = document.createElement('div');
+                    notElNgu.className = 'tin-nhan-bot';
+                    notElNgu.style.borderLeft = '4px solid #17a2b8';
+                    notElNgu.style.background = '#f0faff';
+                    notElNgu.innerHTML = '🔔 <b>Con đã đặt giờ ngủ cho ông bà rồi ạ!</b><br>🌙 Giờ ngủ mỗi ngày: <b>' + intent.gio + '</b>';
+                    vungChat.appendChild(notElNgu);
+                    vungChat.scrollTop = vungChat.scrollHeight;
+                    noi('Con đã đặt giờ đi ngủ ' + intent.gio + ' cho ông bà rồi ạ!');
+                }
+            } catch(e){ /* Bỏ qua lỗi, không làm ảnh hưởng chat chính */ }
+        }
+
+        async function hoiTroLy(){
+            var input = document.getElementById('cau-hoi-ai');
+            var cauHoi = input.value.trim();
+            if(!cauHoi) return;
+            var vungChat = document.getElementById('vung-chat');
+            vungChat.innerHTML += '<div class="tin-nhan-nguoi">' + escapeHtml(cauHoi) + '</div>';
+            input.value = "";
+            document.getElementById('trang-thai-giong-noi').textContent = 'Bấm 🎤 để nói, AI sẽ trả lời ông bà';
+            vungChat.scrollTop = vungChat.scrollHeight;
+
+            var typingEl = document.createElement('div');
+            typingEl.className = 'typing';
+            typingEl.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+            vungChat.appendChild(typingEl);
+            vungChat.scrollTop = vungChat.scrollHeight;
+
+            /* Gọi song song: AI trả lời + phân tích ý định đặt lịch */
+            try{
+                var [cauTraLoi] = await Promise.all([
+                    goiGeminiAPI(cauHoi),
+                    phantichVaDatLich(cauHoi, vungChat)
+                ]);
+                typingEl.remove();
+                var botEl = document.createElement('div');
+                botEl.className = 'tin-nhan-bot';
+                botEl.innerHTML = '🤖 ' + escapeHtml(cauTraLoi).replace(/\n/g,'<br>');
+                vungChat.appendChild(botEl);
+                vungChat.scrollTop = vungChat.scrollHeight;
+                noi(cauTraLoi.replace(/[*_#`]/g,''));
+            } catch(err){
+                typingEl.remove();
+                var noiDungLoi = 'Dạ, xin lỗi ông bà, con chưa kết nối được mạng lúc này. Ông bà kiểm tra wifi rồi thử lại nhé ạ.';
+                var botElLoi = document.createElement('div');
+                botElLoi.className = 'tin-nhan-bot';
+                botElLoi.textContent = '🤖 ' + noiDungLoi;
+                vungChat.appendChild(botElLoi);
+                vungChat.scrollTop = vungChat.scrollHeight;
+                noi(noiDungLoi);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            var inp = document.getElementById('cau-hoi-ai');
+            if(inp) inp.addEventListener('keypress', function(e){ if(e.key === 'Enter') hoiTroLy(); });
+        });
+
+
+        function khoiTaoQuyenHeThong(){
+            if('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied'){
+                Notification.requestPermission();
+            }
+            if('speechSynthesis' in window){
+                let moKhoaGiongNoi = new SpeechSynthesisUtterance('');
+                moKhoaGiongNoi.volume = 0;
+                window.speechSynthesis.speak(moKhoaGiongNoi);
+            }
+        }
+        document.body.addEventListener('click', khoiTaoQuyenHeThong, { once:true });
+
+        function loadVoices(){
+            const voices = window.speechSynthesis.getVoices();
+            vietnameseVoice = voices.find(v => v.lang === 'vi-VN' || (v.lang && v.lang.includes && v.lang.includes('vi')));
+        }
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+
+        function noi(vanBan){
+            if(!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            setTimeout(()=>{
+                if(!vietnameseVoice) loadVoices();
+                loiNoiHienTai = new SpeechSynthesisUtterance(vanBan);
+                if(vietnameseVoice) loiNoiHienTai.voice = vietnameseVoice;
+                loiNoiHienTai.lang = 'vi-VN';
+                loiNoiHienTai.rate = 0.85;
+                loiNoiHienTai.pitch = 1;
+                window.speechSynthesis.speak(loiNoiHienTai);
+            },50);
+        }
+
+
+        function doiTab(idManHinh, nut){
+            var tatca = document.getElementsByClassName('man-hinh');
+            for(var i=0;i<tatca.length;i++) tatca[i].classList.remove('dang-hien-thi');
+            document.getElementById(idManHinh).classList.add('dang-hien-thi');
+
+            var tatcaNut = document.getElementsByClassName('nut-menu');
+            for(var i=0;i<tatcaNut.length;i++) tatcaNut[i].classList.remove('chon');
+            nut.classList.add('chon');
+
+            if(idManHinh !== 'man-qr' && mayQuet && cameraDangChay){
+                mayQuet.stop().then(()=>{ cameraDangChay=false; document.getElementById('scanner-overlay').style.display='none'; }).catch(()=>{});
+            }
+
+            if(idManHinh === 'man-lua-dao'){
+                if(!daTaoTinNhan && !dangTaoTinNhan){
+                    taoDanhSachTinNhanBangAI();
+                } else {
+                    randomTinNhan();
+                }
+            }
+            if(idManHinh === 'man-tam-giao') noi("Ông bà muốn hỏi gì ạ? Ông bà có thể nhắn tin hoặc bấm nút mic để nói nhé.");
+        }
+
+
+        function rippleClick(e){
+            const btn = e.currentTarget;
+            const rect = btn.getBoundingClientRect();
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = (e.clientX - rect.left - size/2) + 'px';
+            ripple.style.top = (e.clientY - rect.top - size/2) + 'px';
+            btn.appendChild(ripple);
+            setTimeout(()=> ripple.remove(), 650);
+        }
+
+
+        /* ===== DANH SÁCH TIN NHẮN DỰ PHÒNG (khi chưa có AI) ===== */
+        var danhSachTinNhanDuPhong = [
+            { noiDung: '"Chúc mừng bạn trúng thưởng 1 tỷ đồng! Nhấn vào link: bit.ly/trung-thuong để nhận."', laLuaDao: true },
+            { noiDung: '"Ngân hàng thông báo: Tài khoản của bạn sắp bị khóa. Xác minh tại: tinyurl.com/xac-minh"', laLuaDao: true },
+            { noiDung: '"Bưu điện: Gói hàng đang bị giữ, cập nhật địa chỉ: bit.ly/cap-nhat-dia-chi"', laLuaDao: true },
+            { noiDung: '"Viettel: Tai khoan cua quy khach con 15.000d. Vui long nap them de khong bi gian doan."', laLuaDao: false },
+            { noiDung: '"Con gái: Mẹ ơi, cuối tuần này vợ chồng con cho các cháu về chơi với ông bà nhé!"', laLuaDao: false },
+            { noiDung: '"Tổ trưởng dân phố: Kính mời các ông bà chiều nay 5h ra nhà văn hóa họp tổ dân phố ạ."', laLuaDao: false }
+        ];
+
+        /* ===== DANH SÁCH AI ===== */
+        var danhSachTinNhanAI = [];
+        var dangTaoTinNhan = false;
+        var daTaoTinNhan = false;
+
+        /* ===== DÙNG OPENROUTER TẠO TIN NHẮN THỰC TẾ ===== */
+        async function taoDanhSachTinNhanBangAI(){
+            if(dangTaoTinNhan || daTaoTinNhan) return;
+            dangTaoTinNhan = true;
+
+            const el = document.getElementById('noi-dung-tin');
+            el.innerHTML = '<span style="color:#888;font-style:italic;">⏳ AI đang tạo tin nhắn thực tế...</span>';
+
+            try{
+                var body = {
+                    model: OR_MODEL,
+                    messages: [{
+                        role: "system",
+                        content: `Bạn là chuyên gia an toàn mạng Việt Nam. Tạo bộ 10 tin nhắn để người cao tuổi luyện tập phân biệt lừa đảo.
+Trả về JSON: {"messages":[{"noi_dung":"...","la_lua_dao":true/false,"giai_thich":"..."},...]}
+
+Tạo đúng: 6 tin LỪA ĐẢO (la_lua_dao:true) + 4 tin AN TOÀN (la_lua_dao:false).
+
+Tin lừa đảo 2024-2025 thực tế ở Việt Nam: giả ngân hàng/Vietcombank/BIDV yêu cầu OTP, giả công an/CSGT, giả bưu điện/Giao hàng nhanh, trúng thưởng, link giả mạo website thật, yêu cầu chuyển tiền gấp, giả con cháu bị tai nạn cần tiền, mã giảm giá lừa đảo...
+Tin an toàn: gia đình, bạn bè, hàng xóm, cơ quan thật, thời tiết...
+
+Mỗi tin PHẢI trông như SMS/Zalo thật, ngắn 1-3 câu. Giai thich ngắn 1 câu tại sao là lừa đảo hoặc an toàn.`
+                    }],
+                    temperature: 0.9,
+                    max_tokens: 1200
+                };
+
+                var res = await fetch(OR_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + OR_API_KEY,
+                        'HTTP-Referer': 'https://silverdigital.app',
+                        'X-Title': 'Silver Digital'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                var data = await res.json();
+                var text = data.choices[0].message.content.trim();
+                var jsonMatch = text.match(/\{[\s\S]*\}/);
+                if(jsonMatch){
+                    var parsed = JSON.parse(jsonMatch[0]);
+                    if(parsed.messages && parsed.messages.length > 0){
+                        danhSachTinNhanAI = parsed.messages.map(m => ({
+                            noiDung: '"' + m.noi_dung + '"',
+                            laLuaDao: m.la_lua_dao === true,
+                            giaiThich: m.giai_thich || ''
+                        }));
+                        daTaoTinNhan = true;
+                    }
+                }
+            } catch(e){ /* Dùng danh sách dự phòng */ }
+
+            dangTaoTinNhan = false;
+            randomTinNhan();
+        }
+
+        function randomTinNhan(){
+            var ds = danhSachTinNhanAI.length > 0 ? danhSachTinNhanAI : danhSachTinNhanDuPhong;
+            var randomIndex = Math.floor(Math.random() * ds.length);
+            tinNhanHienTai = ds[randomIndex];
+            const el = document.getElementById('noi-dung-tin');
+            el.innerHTML = tinNhanHienTai.noiDung;
+            if(tinNhanHienTai.giaiThich){
+                el.innerHTML += '<br><small style="color:#888;font-style:italic;font-size:12px;">💡 ' + tinNhanHienTai.giaiThich + '</small>';
+            }
+            el.classList.remove('hieu-ung');
+            void el.offsetWidth;
+            el.classList.add('hieu-ung');
+        }
+
+
+        function bamNut(nhanLink){
+            if(!tinNhanHienTai) randomTinNhan();
+            if(tinNhanHienTai.laLuaDao){
+                if(nhanLink){
+                    document.getElementById('thong-bao-gia').classList.add('show');
+                    noi("Ông bà ơi, đừng bấm! Đây là lừa đảo đấy.");
+                    shakePhone();
+                } else {
+                    document.getElementById('thong-bao-xoa-lua-dao').classList.add('show');
+                    noi("Tuyệt vời, ông bà đã xóa tin nhắn lừa đảo.");
+                    confettiBurst();
+                }
+            } else {
+                if(nhanLink){
+                    document.getElementById('thong-bao-an-toan').classList.add('show');
+                    noi("Đây là tin nhắn an toàn.");
+                    confettiBurst();
+                } else {
+                    document.getElementById('thong-bao-xoa-an-toan').classList.add('show');
+                    noi("Ông bà đã xóa tin nhắn.");
+                    confettiBurst();
+                }
+            }
+        }
+
+        function dongThongBao(){ document.getElementById('thong-bao-gia').classList.remove('show'); randomTinNhan(); }
+        function dongThongBaoAnToan(){ document.getElementById('thong-bao-an-toan').classList.remove('show'); randomTinNhan(); }
+        function dongThongBaoXoaAnToan(){ document.getElementById('thong-bao-xoa-an-toan').classList.remove('show'); randomTinNhan(); }
+        function dongThongBaoXoaLuaDao(){ document.getElementById('thong-bao-xoa-lua-dao').classList.remove('show'); randomTinNhan(); }
+
+
+        function themThuoc(){
+            var ten = document.getElementById('ten-thuoc').value;
+            var gio = document.getElementById('gio-uong').value;
+            if(ten=="" || gio==""){ alert("Vui lòng điền đủ tên thuốc và giờ!"); return; }
+            dsThuoc.push({ten:ten, gio:gio});
+            localStorage.setItem('danhSachThuoc', JSON.stringify(dsThuoc));
+            hienThiThuoc();
+            noi("Con đã ghi nhớ lịch uống thuốc " + ten + " lúc " + gio + " rồi ạ.");
+            document.getElementById('ten-thuoc').value="";
+            document.getElementById('gio-uong').value="";
+        }
+        function hienThiThuoc(){
+            var vung = document.getElementById('danh-sach-thuoc');
+            vung.innerHTML = "";
+            if(dsThuoc.length===0){ vung.innerHTML = "<p style='color:#666; font-style:italic;'>Chưa có lịch nhắc nào.</p>"; return; }
+            for(var i=0;i<dsThuoc.length;i++){
+                vung.innerHTML += "<p style='margin:5px 0;'>✅ <b>" + dsThuoc[i].gio + "</b>: " + escapeHtml(dsThuoc[i].ten) + "</p>";
+            }
+        }
+        function dongThongBaoThuoc(){ document.getElementById('thong-bao-thuoc-hien-thi').classList.remove('show'); }
+
+        function luuGioNgu(){
+            var gio = document.getElementById('gio-ngu-input').value;
+            if(gio==""){ alert("Vui lòng chọn giờ đi ngủ!"); return; }
+            gioDiNgu = gio;
+            localStorage.setItem('gioDiNgu', gioDiNgu);
+            hienThiGioNgu();
+            noi("Con đã ghi nhớ giờ đi ngủ của ông bà là " + gio + " rồi ạ.");
+        }
+        function hienThiGioNgu(){
+            var vung = document.getElementById('hien-thi-gio-ngu');
+            if(gioDiNgu){ vung.innerHTML = "<p>✅ <b>Giờ ngủ mỗi ngày:</b> " + gioDiNgu + "</p>"; document.getElementById('gio-ngu-input').value = gioDiNgu; }
+            else vung.innerHTML = "<p style='color:#666; font-style:italic;'>Chưa cài đặt giờ ngủ.</p>";
+        }
+        function dongThongBaoNgu(){ document.getElementById('thong-bao-ngu').classList.remove('show'); }
+
+
+        setInterval(function(){
+            var now = new Date();
+            var gioPhut = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+            var ngayHienTai = now.toDateString();
+
+            for(var i=0;i<dsThuoc.length;i++){
+                var gioThuoc = dsThuoc[i].gio.substring(0,5);
+                var keyNhac = ngayHienTai + "_" + gioThuoc + "_" + dsThuoc[i].ten;
+                if(gioThuoc === gioPhut && !thuocDaNhac[keyNhac]){
+                    document.getElementById('ten-thuoc-hien-thi').innerText = "Thuốc: " + dsThuoc[i].ten;
+                    document.getElementById('thong-bao-thuoc-hien-thi').classList.add('show');
+                    if('Notification' in window && Notification.permission === 'granted'){
+                        navigator.serviceWorker.ready.then(function(reg){
+                            reg.showNotification('ĐẾN GIỜ UỐNG THUỐC!', {
+                                body: 'Ông bà ơi, đến giờ uống ' + dsThuoc[i].ten + ' rồi ạ!',
+                                icon: 'https://cdn-icons-png.flaticon.com/512/883/883356.png',
+                                vibrate: [200,100,200],
+                                tag: 'nhac-thuoc-' + dsThuoc[i].ten,
+                                requireInteraction: true
+                            });
+                        }).catch(()=>{});
+                    }
+                    noi("Ông bà ơi, đến giờ uống thuốc " + dsThuoc[i].ten + " rồi ạ!");
+                    thuocDaNhac[keyNhac] = true;
+                }
+            }
+
+            if(gioDiNgu !== "" && gioPhut === gioDiNgu && ngayHienTai !== ngayDaNhacNgu){
+                document.getElementById('thong-bao-ngu').classList.add('show');
+                noi("Ông bà ơi, đến giờ đi ngủ rồi ạ. Ông bà chuẩn bị đi ngủ sớm cho khỏe nhé!");
+                ngayDaNhacNgu = ngayHienTai;
+            }
+        }, 1000);
+
+
+        const nutSOS = document.getElementById('nutSOS');
+        let isSOSPlaying = false;
+        let sosInterval, sosTimeout, audioCtxSOS;
+
+        function playSirenChirp(){
+            if(!audioCtxSOS) audioCtxSOS = new (window.AudioContext || window.webkitAudioContext)();
+            if(audioCtxSOS.state === 'suspended') audioCtxSOS.resume();
+            const osc = audioCtxSOS.createOscillator();
+            const gain = audioCtxSOS.createGain();
+            osc.connect(gain); gain.connect(audioCtxSOS.destination);
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(800, audioCtxSOS.currentTime);
+            osc.frequency.linearRampToValueAtTime(1500, audioCtxSOS.currentTime + 0.4);
+            gain.gain.setValueAtTime(0.6, audioCtxSOS.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtxSOS.currentTime + 0.5);
+            osc.start(audioCtxSOS.currentTime); osc.stop(audioCtxSOS.currentTime + 0.5);
+        }
+
+        const startSOS = (e) => {
+            e.preventDefault();
+            if(isSOSPlaying) return;
+            sosTimeout = setTimeout(()=>{
+                isSOSPlaying = true;
+                nutSOS.classList.add('dang-keu');
+                noi("Cứu tôi với! Có người cần giúp đỡ! Cứu với!");
+                playSirenChirp();
+                sosInterval = setInterval(playSirenChirp, 500);
+            }, 3000);
+        };
+        const stopSOS = (e) => {
+            if(e) e.preventDefault();
+            clearTimeout(sosTimeout);
+            if(!isSOSPlaying) return;
+            isSOSPlaying = false;
+            clearInterval(sosInterval);
+            nutSOS.classList.remove('dang-keu');
+        };
+        nutSOS.addEventListener('mousedown', startSOS);
+        nutSOS.addEventListener('touchstart', startSOS, { passive:false });
+        nutSOS.addEventListener('mouseup', stopSOS);
+        nutSOS.addEventListener('mouseleave', stopSOS);
+        nutSOS.addEventListener('touchend', stopSOS);
+        nutSOS.addEventListener('touchcancel', stopSOS);
+
+
+        function moCamera(){
+            const vung = document.getElementById('ket-qua-qr');
+            vung.innerText = "Đang tìm mã QR...";
+            vung.style.color = "black";
+            document.getElementById('scanner-overlay').style.display = 'block';
+            if(!mayQuet) mayQuet = new Html5Qrcode("khu-vuc-cam");
+            mayQuet.start({ facingMode: "environment" }, { fps:15 },
+                function(ketQua, decodedResult){
+                    if(dangXuLy) return;
+
+                    if(decodedResult && decodedResult.result && decodedResult.result.points){
+                        const points = decodedResult.result.points;
+                        let qrCenterX=0, qrCenterY=0;
+                        for(let p of points){ qrCenterX += p.x; qrCenterY += p.y; }
+                        qrCenterX /= points.length; qrCenterY /= points.length;
+                        const videoElement = document.querySelector('#khu-vuc-cam video');
+                        if(videoElement){
+                            const vidW = videoElement.videoWidth, vidH = videoElement.videoHeight;
+                            const safeZoneW = vidW * 0.6, safeZoneH = vidH * 0.6;
+                            const minX = (vidW - safeZoneW)/2, maxX = minX + safeZoneW;
+                            const minY = (vidH - safeZoneH)/2, maxY = minY + safeZoneH;
+                            if(qrCenterX < minX || qrCenterX > maxX || qrCenterY < minY || qrCenterY > maxY){
+                                const loiNhac = document.getElementById('loi-nhac-qr');
+                                loiNhac.innerText = "Mã QR bị lệch, vui lòng đưa vào giữa khung!";
+                                loiNhac.style.color = "#fff";
+                                loiNhac.style.backgroundColor = "rgba(220,53,69,0.9)";
+                                clearTimeout(timerCanhBao);
+                                timerCanhBao = setTimeout(()=>{ loiNhac.innerText = "Hãy đưa mã QR vào giữa khung"; loiNhac.style.color="#ffeb3b"; loiNhac.style.backgroundColor="rgba(0,0,0,0.45)"; }, 1500);
+                                return;
+                            }
+                        }
+                    }
+
+                    dangXuLy = true;
+                    vung.innerText = "Quét mã thành công!";
+                    vung.style.color = "#28a745";
+                    noi("Dạ, quét mã thành công rồi ạ!");
+                    document.getElementById('noi-dung-qr-thanh-cong').innerText = "Nội dung: " + ketQua;
+                    document.getElementById('thong-bao-qr').classList.add('show');
+                    confettiBurst();
+                    mayQuet.stop().then(()=>{ cameraDangChay=false; document.getElementById('scanner-overlay').style.display='none'; }).catch(()=>{});
+                },
+                function(loi){  }
+            ).then(()=>{ cameraDangChay = true; }).catch(err=>{
+                vung.innerText = "Lỗi: " + err;
+                noi("Camera chưa sẵn sàng ạ.");
+                document.getElementById('scanner-overlay').style.display='none';
+            });
+        }
+
+        function dongThongBaoQR(){ document.getElementById('thong-bao-qr').classList.remove('show'); dangXuLy=false; document.getElementById('ket-qua-qr').innerText="Chưa quét được gì..."; document.getElementById('ket-qua-qr').style.color="black"; }
+
+
+        function shakePhone(){
+            const el = document.querySelector('.dien-thoai');
+            el.style.transition = 'transform 80ms';
+            el.style.transform = 'translateX(-6px)';
+            setTimeout(()=> el.style.transform = 'translateX(6px)', 80);
+            setTimeout(()=> el.style.transform = 'translateX(0)', 160);
+            setTimeout(()=> el.style.transition = '', 260);
+        }
+
+
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        let confettiPieces = [];
+        function resizeCanvas(){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function confettiBurst(){
+            for(let i=0;i<18;i++){
+                confettiPieces.push({
+                    x: window.innerWidth/2 + (Math.random()-0.5)*200,
+                    y: window.innerHeight/2 + (Math.random()-0.5)*200,
+                    vx: (Math.random()-0.5)*6,
+                    vy: - (Math.random()*6 + 2),
+                    size: Math.random()*8 + 6,
+                    color: ['#ff4757','#ffb86b','#7bed9f','#70a1ff','#f78fb3'][Math.floor(Math.random()*5)],
+                    rot: Math.random()*360,
+                    vr: (Math.random()-0.5)*8
+                });
+            }
+
+            let frames = 0;
+            function draw(){
+                frames++;
+                confettiCtx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+                for(let i=0;i<confettiPieces.length;i++){
+                    const p = confettiPieces[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.18;
+                    p.rot += p.vr;
+                    confettiCtx.save();
+                    confettiCtx.translate(p.x,p.y);
+                    confettiCtx.rotate(p.rot * Math.PI/180);
+                    confettiCtx.fillStyle = p.color;
+                    confettiCtx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+                    confettiCtx.restore();
+                }
+
+                confettiPieces = confettiPieces.filter(p => p.y < window.innerHeight + 50);
+                if(confettiPieces.length > 0 && frames < 240) requestAnimationFrame(draw);
+                else confettiCtx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+            }
+            requestAnimationFrame(draw);
+        }
+
+
+        function escapeHtml(text){
+            return text.replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; });
+        }
+
+        window.addEventListener('load', ()=>{
+            taoDanhSachTinNhanBangAI();
+            hienThiThuoc();
+            hienThiGioNgu();
+        });
+
+
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyADdrrfHXyjkmVErjvvmaGBKiVTl9oZpBo",
+            authDomain: "tinhoctre-d01c1.firebaseapp.com",
+            projectId: "tinhoctre-d01c1",
+            storageBucket: "tinhoctre-d01c1.firebasestorage.app",
+            messagingSenderId: "86350384089",
+            appId: "1:86350384089:web:07a805155df4f22e77e7c8",
+            measurementId: "G-58MLMJB9GD"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+
+        async function dangKyThongBao(){
+            try{
+                const registration = await navigator.serviceWorker.register('sw.js');
+                const permission = await Notification.requestPermission();
+                if(permission === 'granted'){
+                    const token = await getToken(messaging, {
+                        vapidKey: 'BBbHt3b4NXiUYaArutvshtqgl1EJjRZwaIjP0xDr0ZqWkNGTnrL8YSxEeGIABDDEQa2GzAM3b5fwzYVyPkCId8s',
+                        serviceWorkerRegistration: registration
+                    });
+                    console.log("Token thiết bị của ông bà:", token);
+                }
+            }catch(err){ console.error("Lỗi đăng ký thông báo:", err); }
+        }
+        window.addEventListener('load', dangKyThongBao);
+    </script>
+</body>
+</html>
