@@ -913,9 +913,9 @@
         var ngayDaNhacNgu = "";
 
         /* ===== OPENROUTER / OPENAI API CONFIG ===== */
-        const OR_API_KEY = "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";
-        const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
-        const OR_MODEL = "openai/gpt-4o-mini";
+        const OR_API_KEY = ""; // Không cần — dùng proxy server
+        const OR_URL = "https://ef680956-af90-4efe-af15-1ed84132bcca-00-ltyo8m9xb9rh.sisko.replit.dev/api/chat"; // Proxy qua server, tránh lộ API key
+        const OR_MODEL = "google/gemma-4-31b-it:free";
         const SYSTEM_PROMPT = `Bạn là trợ lí ảo thân thiện tên Silver Digital, chuyên hỗ trợ người cao tuổi Việt Nam. 
 Quy tắc trả lời:
 - Xưng là "con", gọi người dùng là "ông bà"
@@ -1529,9 +1529,9 @@ Mỗi tin PHẢI trông như SMS/Zalo thật, ngắn 1-3 câu. Giai thich ngắn
                     email_nhan: emailCon, // Khớp với ô "To Email"
                     title: "CẢNH BÁO SOS KHẨN CẤP!", // Khớp với ô "Subject"
                     name: "Hệ thống Silver Digital", // Khớp với ô "From Name"
-                    email: "canhbao@silverdigital.app", // Khớp với ô "Reply To"
+                    email: emailCon, // Reply To = email con cái → Auto-Reply sẽ gửi đến đây
                     time: thoiGian, // Khớp với ô {{time}} trong nội dung
-                    message: "Ông/bà vừa bấm nút SOS khẩn cấp trên máy của mình, cần được hỗ trợ ngay!", // Khớp với {{message}}
+                    message: "Ong/ba vua bam nut SOS luc " + thoiGian + ". Vui long lien lac ngay de kiem tra tinh trang suc khoe.", // Khớp với {{message}}
                     location_link: lienKetBanDo // Biến truyền vị trí Maps
                 });
                 console.log("✅ Đã gửi email cảnh báo thành công!");
