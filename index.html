@@ -3,12 +3,16 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>SILVER DIGITAL - TRỢ LÝ CỦA ÔNG BÀ</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <link rel="manifest" href="manifest.json" />
     <link rel="script" href="script.js" />
     <meta name="theme-color" content="#007bff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
 
     <style>
 
@@ -26,9 +30,15 @@
         }
 
 
+        html, body{
+            height: 100%;
+        }
+
         body{
             margin:0;
             height:100vh;
+            height:-webkit-fill-available;
+            height:100dvh;
             display:flex;
             align-items:center;
             justify-content:center;
@@ -37,13 +47,19 @@
                         radial-gradient(1000px 500px at 90% 90%, rgba(40,167,69,0.03), transparent),
                         var(--bg-page);
             overflow:hidden;
+            box-sizing: border-box;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
+
+        *{ box-sizing: border-box; }
 
 
         .dien-thoai{
             width:100%;
             max-width:460px;
             height:94vh;
+            height:94dvh;
+            max-height: 900px;
             background: var(--phone-bg);
             border-radius:16px;
             box-shadow: 0 18px 50px rgba(0,0,0,0.6);
@@ -64,6 +80,7 @@
             background: linear-gradient(90deg,var(--primary),var(--primary-2));
             position:relative;
             overflow:hidden;
+            padding-top: calc(14px + env(safe-area-inset-top) * 0.4);
         }
         .tieu-de-trang::after{
             content:"";
@@ -90,9 +107,11 @@
             padding:14px;
             display:none;
             overflow:auto;
+            -webkit-overflow-scrolling: touch;
             transition: opacity 260ms ease, transform 260ms ease;
             opacity:0;
             transform: translateY(8px);
+            min-height:0;
         }
         .man-hinh.dang-hien-thi{
             display:block;
@@ -154,18 +173,22 @@
         }
 
         .menu-duoi{
-            height:56px;
+            min-height:56px;
+            padding-bottom: env(safe-area-inset-bottom);
             display:flex;
             border-top:1px solid rgba(0,0,0,0.06);
             background: linear-gradient(180deg,#fff,#f7fbff);
+            flex-shrink:0;
         }
         .nut-menu{
             flex:1;
             text-align:center;
             padding-top:14px;
+            padding-bottom:6px;
             cursor:pointer;
             transition: background 160ms ease, color 160ms ease, transform 160ms;
             user-select:none;
+            font-size: 13px;
         }
         .nut-menu:hover{ transform: translateY(-2px); }
         .nut-menu.chon{
@@ -188,6 +211,8 @@
         .lop-nen-mo.show{ display:flex; animation: fadeIn 180ms ease; }
         .hop-noi-dung{
             width:86%;
+            max-height: 90%;
+            overflow:auto;
             padding:20px;
             border-radius:14px;
             background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.78));
@@ -294,7 +319,7 @@
 
         .nut-sos{
             position:absolute;
-            bottom:74px;
+            bottom:calc(74px + env(safe-area-inset-bottom));
             left:50%;
             transform:translateX(-50%);
             width:86px;
@@ -310,6 +335,7 @@
             z-index:1000;
             box-shadow: 0 18px 40px rgba(220,53,69,0.28);
             transition: transform 160ms ease;
+            touch-action: none;
         }
         .nut-sos.dang-keu{ animation: sosPulse 900ms infinite; box-shadow: 0 0 40px 8px rgba(220,53,69,0.85); }
         @keyframes sosPulse{
@@ -372,6 +398,7 @@
         }
         .khu-nhap-chat input{
             flex:1;
+            min-width:0;
             padding:10px;
             border-radius:8px;
             border:1.5px solid #ccc;
@@ -414,10 +441,35 @@
             letter-spacing:0.5px;
         }
 
+        input[type="text"], input[type="time"], input[type="tel"], input[type="email"]{
+            font-size:16px; /* tránh Safari tự zoom khi bấm vào ô nhập */
+        }
+
         @media (max-width:420px){
-            .dien-thoai{ border-radius:10px; height:98vh; }
+            .dien-thoai{ border-radius:10px; height:98vh; height:98dvh; }
             .nut-sos{ width:72px; height:72px; }
             .khung-chat{ height:270px; }
+        }
+
+        @media (max-width:340px){
+            .nut-menu{ font-size:11px; padding-left:2px; padding-right:2px; }
+            .nut-sos{ width:64px; height:64px; font-size:14px; }
+        }
+
+        /* Màn hình lớn (máy tính bảng / máy tính) */
+        @media (min-width:700px){
+            body{ padding-top: max(env(safe-area-inset-top), 24px); padding-bottom: max(env(safe-area-inset-bottom), 24px); }
+            .dien-thoai{ height:min(94dvh, 900px); box-shadow: 0 24px 70px rgba(0,0,0,0.55); }
+            .khung-chat{ height:380px; }
+        }
+
+        /* Màn hình ngang trên điện thoại (chiều cao thấp) */
+        @media (max-height:480px) and (orientation:landscape){
+            .dien-thoai{ height:98dvh; }
+            .nut-sos{ width:56px; height:56px; font-size:12px; bottom:calc(60px + env(safe-area-inset-bottom)); }
+            .menu-duoi{ min-height:44px; }
+            .nut-menu{ padding-top:8px; font-size:11px; }
+            .khung-chat{ height:150px; }
         }
     </style>
 </head>
@@ -494,12 +546,26 @@
             <div id="hien-thi-gio-ngu" style="margin-top:15px; font-size:18px;"></div>
         </div>
 
+        <!-- ===== MÀN HÌNH CÀI ĐẶT (con cái điền số điện thoại + email) ===== -->
+        <div id="man-cai-dat" class="man-hinh">
+            <h3>Cài đặt cho con cháu</h3>
+            <p style="color:#666; font-size:14px;">Con cái điền thông tin dưới đây để nhận cuộc gọi và email cảnh báo mỗi khi ông bà bấm nút SOS trên chiếc máy này.</p>
+            <label style="display:block; margin-top:12px; margin-bottom:4px; font-weight:bold;">Số điện thoại con cái</label>
+            <input type="tel" id="cd-so-dien-thoai" placeholder="VD: 0912345678" style="width:90%;padding:10px;margin-bottom:10px;font-size:16px;">
+            <label style="display:block; margin-bottom:4px; font-weight:bold;">Email con cái (nhận cảnh báo SOS)</label>
+            <input type="email" id="cd-email-con" placeholder="email@vidu.com" style="width:90%;padding:10px;margin-bottom:10px;font-size:16px;">
+            <button class="nut-bam nut-xanh" onclick="rippleClick(event); luuCaiDat()">Lưu cài đặt</button>
+            <div id="cd-thong-bao-luu" style="margin-top:8px; font-weight:bold; min-height:20px;"></div>
+            <p style="color:#999; font-size:12px; margin-top:14px;">Lưu ý: thông tin này chỉ lưu trên chiếc máy này, không chia sẻ sang máy khác.</p>
+        </div>
+
         <div class="menu-duoi">
             <div class="nut-menu chon" onclick="doiTab('man-lua-dao', this)">🛡️ An toàn</div>
             <div class="nut-menu" onclick="doiTab('man-qr', this)">📷 Quét mã</div>
             <div class="nut-menu" onclick="doiTab('man-thuoc', this)">💊 Thuốc</div>
             <div class="nut-menu" onclick="doiTab('man-tam-giao', this)">💬 Trợ lí ảo</div>
             <div class="nut-menu" onclick="doiTab('man-ngu', this)">🌙 Ngủ</div>
+            <div class="nut-menu" onclick="doiTab('man-cai-dat', this)">⚙️ Cài đặt</div>
         </div>
 
         <div id="thong-bao-gia" class="lop-nen-mo">
@@ -562,6 +628,18 @@
                 <h2 style="color:#17a2b8;">ĐẾN GIỜ ĐI NGỦ!</h2>
                 <p>Ông bà ơi, đến giờ đi ngủ rồi ạ. Ông bà chuẩn bị đi ngủ sớm cho khỏe nhé!</p>
                 <button class="nut-bam nut-xanh" onclick="rippleClick(event); dongThongBaoNgu()">Ông bà đi ngủ đây</button>
+            </div>
+        </div>
+
+        <!-- ===== ĐĂNG KÝ EMAIL LẦN ĐẦU (con cái điền khi mới cài web) ===== -->
+        <div id="man-hinh-dang-ky-lan-dau" class="lop-nen-mo">
+            <div class="hop-noi-dung" style="border-color:var(--primary);">
+                <div style="font-size:50px;">✉️</div>
+                <h2 style="color:var(--primary); font-size:20px; margin:8px 0;">Đăng ký nhận cảnh báo SOS</h2>
+                <p style="font-size:15px; color:#333;">Con cái vui lòng nhập email để nhận thông báo kèm vị trí mỗi khi ông/bà bấm nút SOS trên chiếc máy này.</p>
+                <input type="email" id="dk-email-lan-dau" placeholder="email@vidu.com" style="width:90%;padding:10px;margin:10px 0;font-size:16px; border-radius:8px; border:1.5px solid #ccc;">
+                <button class="nut-bam nut-xanh" onclick="rippleClick(event); luuEmailLanDau()">Lưu email</button>
+                <p style="font-size:12px; color:#999; margin-top:8px;">Có thể cập nhật lại sau trong mục ⚙️ Cài đặt.</p>
             </div>
         </div>
 
@@ -640,6 +718,7 @@ Quy tắc trả lời:
                 btn.textContent = '🎤';
                 dangNghe = false;
                 if(event.error === 'not-allowed'){
+                    ghiNhoQuyen('micro', 'denied');
                     label.textContent = '❌ Ông bà cần cho phép dùng microphone ạ';
                 } else if(event.error === 'no-speech'){
                     label.textContent = '⚠️ Con chưa nghe thấy gì, ông bà thử lại nhé';
@@ -655,6 +734,7 @@ Quy tắc trả lời:
                 btn.classList.remove('dang-nghe');
                 btn.textContent = '🎤';
                 dangNghe = false;
+                ghiNhoQuyen('micro', 'granted');
                 var vanBan = document.getElementById('cau-hoi-ai').value.trim();
                 if(vanBan){
                     label.textContent = 'Bấm ➤ để gửi hoặc 🎤 để nói lại';
@@ -882,6 +962,7 @@ Giờ phải là format 24h HH:MM. Thiếu giờ hoặc thiếu tên thuốc →
                 }
             }
             if(idManHinh === 'man-tam-giao') noi("Ông bà muốn hỏi gì ạ? Ông bà có thể nhắn tin hoặc bấm nút mic để nói nhé.");
+            if(idManHinh === 'man-cai-dat') hienThiCaiDat();
         }
 
 
@@ -1055,6 +1136,180 @@ Mỗi tin PHẢI trông như SMS/Zalo thật, ngắn 1-3 câu. Giai thich ngắn
         function dongThongBaoNgu(){ document.getElementById('thong-bao-ngu').classList.remove('show'); }
 
 
+        /* ===================================================================
+           CÀI ĐẶT: SỐ ĐIỆN THOẠI + EMAIL CON CÁI (lưu riêng theo từng máy)
+           =================================================================== */
+        var KHOA_SO_DIEN_THOAI = 'qb_so_dien_thoai';
+        var KHOA_EMAIL_CON = 'qb_email_con';
+        var KHOA_VI_TRI_GAN_NHAT = 'qb_vi_tri_gan_nhat';
+
+        function laEmailHopLe(email){
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function hienThiCaiDat(){
+            var soDT = localStorage.getItem(KHOA_SO_DIEN_THOAI) || '';
+            var email = localStorage.getItem(KHOA_EMAIL_CON) || '';
+            var elSDT = document.getElementById('cd-so-dien-thoai');
+            var elEmail = document.getElementById('cd-email-con');
+            if(elSDT) elSDT.value = soDT;
+            if(elEmail) elEmail.value = email;
+        }
+
+        function luuCaiDat(){
+            var soDT = document.getElementById('cd-so-dien-thoai').value.trim();
+            var email = document.getElementById('cd-email-con').value.trim();
+            var tb = document.getElementById('cd-thong-bao-luu');
+            if(email && !laEmailHopLe(email)){
+                tb.style.color = 'var(--danger)';
+                tb.textContent = '❌ Email không hợp lệ, vui lòng kiểm tra lại.';
+                return;
+            }
+            localStorage.setItem(KHOA_SO_DIEN_THOAI, soDT);
+            localStorage.setItem(KHOA_EMAIL_CON, email);
+            tb.style.color = 'var(--success)';
+            tb.textContent = '✅ Đã lưu cài đặt thành công!';
+            noi('Con đã lưu thông tin cài đặt rồi ạ.');
+            setTimeout(function(){ tb.textContent=''; }, 3000);
+        }
+
+        function luuEmailLanDau(){
+            var email = document.getElementById('dk-email-lan-dau').value.trim();
+            if(!email || !laEmailHopLe(email)){
+                alert('Vui lòng nhập email hợp lệ.');
+                return;
+            }
+            localStorage.setItem(KHOA_EMAIL_CON, email);
+            document.getElementById('man-hinh-dang-ky-lan-dau').classList.remove('show');
+            hienThiCaiDat();
+        }
+
+        function kiemTraDangKyLanDau(){
+            var email = localStorage.getItem(KHOA_EMAIL_CON);
+            if(!email){
+                document.getElementById('man-hinh-dang-ky-lan-dau').classList.add('show');
+            }
+        }
+
+
+        /* ===================================================================
+           GHI NHỚ QUYỀN TRUY CẬP (MICRO / VỊ TRÍ) + LẤY VỊ TRÍ CHO SOS
+           =================================================================== */
+        function ghiNhoQuyen(ten, trangThai){
+            try{ localStorage.setItem('qb_quyen_' + ten, trangThai); }catch(e){}
+        }
+        function daTuChoiQuyen(ten){
+            return localStorage.getItem('qb_quyen_' + ten) === 'denied';
+        }
+
+        function layViTriHienTai(){
+            return new Promise(function(resolve){
+                var luuCu = null;
+                try{ luuCu = JSON.parse(localStorage.getItem(KHOA_VI_TRI_GAN_NHAT) || 'null'); }catch(e){ luuCu = null; }
+                if(!('geolocation' in navigator) || daTuChoiQuyen('vitri')){ resolve(luuCu); return; }
+                var daTraLoi = false;
+                var boDemThoiGian = setTimeout(function(){
+                    if(!daTraLoi){ daTraLoi = true; resolve(luuCu); }
+                }, 6000);
+                navigator.geolocation.getCurrentPosition(function(vt){
+                    if(daTraLoi) return;
+                    daTraLoi = true;
+                    clearTimeout(boDemThoiGian);
+                    ghiNhoQuyen('vitri', 'granted');
+                    var ketQua = { lat: vt.coords.latitude, lng: vt.coords.longitude, time: Date.now() };
+                    try{ localStorage.setItem(KHOA_VI_TRI_GAN_NHAT, JSON.stringify(ketQua)); }catch(e){}
+                    resolve(ketQua);
+                }, function(loi){
+                    if(daTraLoi) return;
+                    daTraLoi = true;
+                    clearTimeout(boDemThoiGian);
+                    if(loi && loi.code === 1) ghiNhoQuyen('vitri', 'denied');
+                    resolve(luuCu);
+                }, { enableHighAccuracy:true, timeout:5500, maximumAge:60000 });
+            });
+        }
+
+        async function khoiTaoQuyenSomNhat(){
+            if('permissions' in navigator){
+                try{
+                    var ketQuaVT = await navigator.permissions.query({ name: 'geolocation' });
+                    ghiNhoQuyen('vitri', ketQuaVT.state);
+                    ketQuaVT.onchange = function(){ ghiNhoQuyen('vitri', ketQuaVT.state); };
+                }catch(e){}
+                try{
+                    var ketQuaMic = await navigator.permissions.query({ name: 'microphone' });
+                    ghiNhoQuyen('micro', ketQuaMic.state);
+                    ketQuaMic.onchange = function(){ ghiNhoQuyen('micro', ketQuaMic.state); };
+                }catch(e){}
+            }
+            /* Chủ động lấy sẵn vị trí một lần (nếu chưa từng bị từ chối) để SOS phản hồi nhanh hơn */
+            if(!daTuChoiQuyen('vitri')){
+                layViTriHienTai();
+            }
+        }
+        document.body.addEventListener('click', khoiTaoQuyenSomNhat, { once:true });
+
+
+        /* ===================================================================
+           EMAILJS: GỬI EMAIL CẢNH BÁO SOS KÈM VỊ TRÍ (riêng theo từng máy)
+           =================================================================== */
+        const EMAILJS_SERVICE_ID = "service_khtrsdb";
+        const EMAILJS_TEMPLATE_ID = "template_x2cc6zi";
+        const EMAILJS_PUBLIC_KEY = "5en8hfe_lfmaKbuYm";
+
+        if(window.emailjs){
+            try{ window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }catch(e){}
+        }
+
+        async function guiEmailKhanCap(){
+            var emailCon = (localStorage.getItem(KHOA_EMAIL_CON) || '').trim();
+            if(!emailCon || !laEmailHopLe(emailCon)){
+                noi("Ông bà ơi, con cái chưa đăng ký email nhận cảnh báo. Ông bà nhờ con cháu vào phần Cài đặt để điền nhé.");
+                return;
+            }
+            if(!window.emailjs) return;
+            var viTri = await layViTriHienTai();
+            var lienKetBanDo = viTri ? ('https://www.google.com/maps?q=' + viTri.lat + ',' + viTri.lng) : 'Không xác định được vị trí';
+            var thoiGian = new Date().toLocaleString('vi-VN');
+            try{
+                await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                    to_email: emailCon,
+                    location_link: lienKetBanDo,
+                    time: thoiGian,
+                    message: "Ông/bà vừa bấm nút SOS khẩn cấp trên máy của mình, cần được hỗ trợ ngay!"
+                });
+            } catch(e){ /* Không chặn luồng SOS nếu gửi email thất bại */ }
+        }
+
+
+        /* ===================================================================
+           SOS: GỌI ĐIỆN TRỰC TIẾP ĐẾN SỐ ĐÃ ĐĂNG KÝ
+           - Thiết bị Apple (iPhone/iPad/Mac Safari): gọi qua FaceTime Audio
+           - Thiết bị khác (Samsung/Android...): gọi điện thoại thông thường (tel:)
+           =================================================================== */
+        function laThietBiApple(){
+            var ua = navigator.userAgent || navigator.vendor || '';
+            var laIOS = /iPad|iPhone|iPod/.test(ua);
+            var laMacCamUng = /Macintosh/.test(ua) && navigator.maxTouchPoints && navigator.maxTouchPoints > 1;
+            return laIOS || laMacCamUng;
+        }
+
+        function goiDienKhanCap(){
+            var soDienThoai = (localStorage.getItem(KHOA_SO_DIEN_THOAI) || '').trim();
+            if(!soDienThoai){
+                noi("Ông bà ơi, con cái chưa cài đặt số điện thoại. Ông bà nhờ con cháu vào phần Cài đặt để điền số nhé.");
+                return;
+            }
+            var soDaLamSach = soDienThoai.replace(/[^0-9+]/g, '');
+            if(!soDaLamSach) return;
+            if(laThietBiApple()){
+                window.location.href = 'facetime-audio://' + soDaLamSach;
+            } else {
+                window.location.href = 'tel:' + soDaLamSach;
+            }
+        }
+
+
         setInterval(function(){
             var now = new Date();
             var gioPhut = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
@@ -1117,6 +1372,8 @@ Mỗi tin PHẢI trông như SMS/Zalo thật, ngắn 1-3 câu. Giai thich ngắn
                 noi("Cứu tôi với! Có người cần giúp đỡ! Cứu với!");
                 playSirenChirp();
                 sosInterval = setInterval(playSirenChirp, 500);
+                guiEmailKhanCap();
+                goiDienKhanCap();
             }, 3000);
         };
         const stopSOS = (e) => {
@@ -1253,6 +1510,8 @@ Mỗi tin PHẢI trông như SMS/Zalo thật, ngắn 1-3 câu. Giai thich ngắn
             taoDanhSachTinNhanBangAI();
             hienThiThuoc();
             hienThiGioNgu();
+            hienThiCaiDat();
+            kiemTraDangKyLanDau();
         });
 
 
