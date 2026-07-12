@@ -947,6 +947,7 @@ Quy tắc trả lời:
         var dangNghe = false;
         var soLanTuDongThuLai = 0;
         var laDangDoiKetQuaCuoi = false;
+        var bomHenGioKiemTraTreo = null; // "watchdog": phát hiện Safari/iPhone bị "treo im" (không onstart, không onerror)
 
         function laThietBiIOS() {
             var ua = navigator.userAgent || '';
@@ -994,6 +995,7 @@ Quy tắc trả lời:
             phien.maxAlternatives = 1;
 
             phien.onstart = function () {
+                huyBomHenGioTreo();
                 dangNghe = true;
                 laDangDoiKetQuaCuoi = false;
                 var btn = document.getElementById('nut-micro-btn');
@@ -1014,6 +1016,7 @@ Quy tắc trả lời:
             };
 
             phien.onerror = function (event) {
+                huyBomHenGioTreo();
                 dungMicroVeMacDinh();
                 var loi = event.error;
 
@@ -1025,16 +1028,38 @@ Quy tắc trả lời:
                 }
 
                 if (loi === 'not-allowed' || loi === 'service-not-allowed') {
-                    ghiNhoQuyen('micro', 'denied');
-                    if (laChayKieuUngDungCaiSan()) {
-                        datTrangThaiMicro('❌ iPhone chặn mic khi mở từ biểu tượng màn hình chính. Ông bà mở bằng trình duyệt Safari (Chrome/Safari) để dùng mic nhé', false);
+                    // QUAN TRỌNG: trên iPhone, lỗi này đôi khi xảy ra ngay TRONG lúc hộp thoại
+                    // xin quyền còn đang hiện ra (chưa phải là bị từ chối thật sự). Nếu ta đã
+                    // tự xác nhận quyền micro là "granted" (qua getUserMedia) thì đừng vội ghi
+                    // đè thành "denied" và doạ người dùng vào Cài đặt - chỉ cần bảo bấm lại.
+                    if (daDuocCapQuyen('micro')) {
+                        datTrangThaiMicro('⚠️ Có lỗi khi bắt đầu nghe, ông bà bấm 🎤 lại giúp con nhé', false);
                     } else {
-                        datTrangThaiMicro('❌ Ông bà vào Cài đặt > Safari > Microphone để cho phép ạ', false);
+                        ghiNhoQuyen('micro', 'denied');
+                        if (laChayKieuUngDungCaiSan()) {
+                            datTrangThaiMicro('❌ iPhone chặn mic khi mở từ biểu tượng màn hình chính. Ông bà mở bằng trình duyệt Safari (Chrome/Safari) để dùng mic nhé', false);
+                        } else {
+                            datTrangThaiMicro('❌ Ông bà vào Cài đặt > Safari > Microphone để cho phép ạ', false);
+                        }
                     }
                 } else if (loi === 'no-speech') {
                     datTrangThaiMicro('⚠️ Con chưa nghe thấy gì, ông bà bấm 🎤 và nói to hơn nhé', false);
                 } else if (loi === 'audio-capture') {
-                    datTrangThaiMicro('⚠️ Không tìm thấy microphone, ông bà kiểm tra lại máy giúp con', false);
+                    // Thường là do vừa nhả mic (getUserMedia xin quyền) xong thì Safari/iPhone
+                    // chưa kịp giải phóng hẳn phần cứng mic để SpeechRecognition dùng lại ngay.
+                    // Tự thử lại một lần sau một khoảng nghỉ ngắn bằng phiên hoàn toàn mới.
+                    if (soLanTuDongThuLai < 1) {
+                        soLanTuDongThuLai++;
+                        datTrangThaiMicro('🔄 Đang thử kết nối lại với micro...', false);
+                        setTimeout(function () {
+                            var phienMoi = taoPhienNhanDienGiong();
+                            if (!phienMoi) return;
+                            nhanDienGiong = phienMoi;
+                            try { nhanDienGiong.start(); datBomHenGioTreo(); } catch (e) { /* bỏ qua, chờ người dùng bấm lại */ }
+                        }, 600);
+                    } else {
+                        datTrangThaiMicro('⚠️ Không dùng được microphone, ông bà tắt mở lại trình duyệt rồi thử lại giúp con', false);
+                    }
                 } else if (loi === 'network') {
                     // Lỗi "network" là lỗi phổ biến nhất trên Safari/iPhone khi nhận diện
                     // giọng nói bị gọi dồn dập. Tự thử lại một lần bằng phiên hoàn toàn mới.
@@ -1045,17 +1070,18 @@ Quy tắc trả lời:
                             var phienMoi = taoPhienNhanDienGiong();
                             if (!phienMoi) return;
                             nhanDienGiong = phienMoi;
-                            try { nhanDienGiong.start(); } catch (e) { /* bỏ qua, chờ người dùng bấm lại */ }
+                            try { nhanDienGiong.start(); datBomHenGioTreo(); } catch (e) { /* bỏ qua, chờ người dùng bấm lại */ }
                         }, 400);
                     } else {
                         datTrangThaiMicro('⚠️ Mạng chập chờn, ông bà kiểm tra wifi/4G rồi bấm 🎤 lại nhé', false);
                     }
                 } else {
-                    datTrangThaiMicro('⚠️ Lỗi nhận giọng nói, ông bà bấm 🎤 thử lại ạ', false);
+                    datTrangThaiMicro('⚠️ Lỗi nhận giọng nói (' + (loi || 'không rõ') + '), ông bà bấm 🎤 thử lại ạ', false);
                 }
             };
 
             phien.onend = function () {
+                huyBomHenGioTreo();
                 dungMicroVeMacDinh();
                 ghiNhoQuyen('micro', 'granted');
                 soLanTuDongThuLai = 0;
@@ -1065,6 +1091,27 @@ Quy tắc trả lời:
             };
 
             return phien;
+        }
+
+        function huyBomHenGioTreo() {
+            if (bomHenGioKiemTraTreo) { clearTimeout(bomHenGioKiemTraTreo); bomHenGioKiemTraTreo = null; }
+        }
+
+        /* "Watchdog": một số máy iPhone bị Safari "treo im" hoàn toàn sau khi gọi
+           start() - không có onstart, không có onerror, không có gì cả (khả năng cao
+           do xung đột giữa getUserMedia vừa xin quyền và SpeechRecognition giành lại
+           quyền dùng mic). Nếu sau vài giây vẫn chưa vào trạng thái "đang nghe",
+           chủ động huỷ và báo cho ông bà bấm lại thay vì để nút mic bị đơ mãi. */
+        function datBomHenGioTreo() {
+            huyBomHenGioTreo();
+            bomHenGioKiemTraTreo = setTimeout(function () {
+                if (!dangNghe) {
+                    try { if (nhanDienGiong) nhanDienGiong.abort(); } catch (e) { /* bỏ qua */ }
+                    nhanDienGiong = null;
+                    dungMicroVeMacDinh();
+                    datTrangThaiMicro('⚠️ Micro chưa phản hồi, ông bà đợi 1 giây rồi bấm 🎤 lại giúp con nhé', false);
+                }
+            }, 3000);
         }
 
         function batDauPhienNgheThat() {
@@ -1078,6 +1125,7 @@ Quy tắc trả lời:
             nhanDienGiong = taoPhienNhanDienGiong();
             try {
                 nhanDienGiong.start();
+                datBomHenGioTreo();
             } catch (e) {
                 // InvalidStateError: phiên cũ chưa kịp đóng hẳn -> tạo phiên mới và yêu cầu bấm lại
                 dungMicroVeMacDinh();
@@ -1139,9 +1187,12 @@ Quy tắc trả lời:
             navigator.mediaDevices.getUserMedia({ audio: true }).then(function (luong) {
                 luong.getTracks().forEach(function (t) { t.stop(); });
                 ghiNhoQuyen('micro', 'granted');
-                // Bắt đầu nghe ngay khi vừa được cấp quyền, trong cùng chuỗi thao tác
-                // của người dùng (không setTimeout) để giữ "cử chỉ người dùng" trên iPhone.
-                batDauPhienNgheThat();
+                // Đợi một chút để iPhone giải phóng hẳn phần cứng mic vừa dùng để xin
+                // quyền (getUserMedia) trước khi SpeechRecognition giành lại - gọi ngay
+                // lập tức dễ gây lỗi "audio-capture" hoặc treo im do xung đột phiên âm
+                // thanh. Lúc này đã qua bước xin quyền nên không còn lo mất "cử chỉ
+                // người dùng" như lúc gọi start() lần đầu.
+                setTimeout(batDauPhienNgheThat, 350);
             }).catch(function (err) {
                 ghiNhoQuyen('micro', 'denied');
                 if (laChayKieuUngDungCaiSan()) {
