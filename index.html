@@ -8,8 +8,6 @@
     <title>SILVER DIGITAL - TRỢ LÝ CỦA ÔNG BÀ</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <link rel="manifest" href="manifest.json" />
-    <link rel="script" href="script.js" />
     <meta name="theme-color" content="#007bff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -891,9 +889,25 @@
                 <button class="nut-bam nut-xanh" onclick="rippleClick(event); luuEmailLanDau()">Lưu email</button>
 
                 <button class="nut-bam"
-                    onclick="rippleClick(event); document.getElementById('man-hinh-dang-ky-lan-dau').classList.remove('show')">Tôi
+                    onclick="rippleClick(event); document.getElementById('man-hinh-dang-ky-lan-dau').classList.remove('show'); kiemTraXinQuyen()">Tôi
                     sẽ thêm sau</button>
                 <p style="font-size:12px; color:#999; margin-top:8px;">Có thể cập nhật lại sau trong mục ⚙️ Cài đặt.</p>
+            </div>
+        </div>
+
+        <!-- ===== XIN QUYỀN MICRO / VỊ TRÍ NGAY TỪ ĐẦU (chủ động, ghi nhớ lại) ===== -->
+        <div id="man-xin-quyen" class="lop-nen-mo">
+            <div class="hop-noi-dung" style="border-color:var(--primary);">
+                <div style="font-size:50px;">🎙️</div>
+                <h2 style="color:var(--primary); font-size:20px; margin:8px 0;">Cho phép Micro & Vị trí</h2>
+                <p style="font-size:15px; color:#333;">
+                    Để ông bà <b>nói chuyện được với Trợ lí ảo</b> và để <b>nút SOS gửi được vị trí</b> cho con cháu,
+                    ông bà bấm "Đồng ý" rồi chọn <b>Cho phép / Allow</b> ở hộp thoại hiện ra nhé ạ.
+                </p>
+                <button class="nut-bam nut-xanh" id="nut-dong-y-xin-quyen"
+                    onclick="rippleClick(event); xinQuyenBanDau()">Đồng ý, cấp quyền</button>
+                <button class="nut-bam" onclick="rippleClick(event); dongManXinQuyen()">Để sau</button>
+                <p id="tt-xin-quyen" style="font-size:13px; color:#666; margin-top:8px; min-height:16px;"></p>
             </div>
         </div>
 
@@ -1053,6 +1067,25 @@ Quy tắc trả lời:
             return phien;
         }
 
+        function batDauPhienNgheThat() {
+            document.getElementById('cau-hoi-ai').value = '';
+            soLanTuDongThuLai = 0;
+
+            // QUAN TRỌNG cho iPhone: phải gọi start() ngay lập tức, đồng bộ,
+            // trong đúng thao tác bấm nút của người dùng — không qua bước
+            // chờ (await/setTimeout) nào trước đó, nếu không Safari sẽ âm thầm
+            // từ chối vì mất "cử chỉ người dùng".
+            nhanDienGiong = taoPhienNhanDienGiong();
+            try {
+                nhanDienGiong.start();
+            } catch (e) {
+                // InvalidStateError: phiên cũ chưa kịp đóng hẳn -> tạo phiên mới và yêu cầu bấm lại
+                dungMicroVeMacDinh();
+                nhanDienGiong = null;
+                datTrangThaiMicro('Ông bà bấm 🎤 lại giúp con nhé', false);
+            }
+        }
+
         function batGiongNoi() {
             var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -1075,22 +1108,50 @@ Quy tắc trả lời:
                 return;
             }
 
-            document.getElementById('cau-hoi-ai').value = '';
-            soLanTuDongThuLai = 0;
-
-            // QUAN TRỌNG cho iPhone: phải gọi start() ngay lập tức, đồng bộ,
-            // trong đúng thao tác bấm nút của người dùng — không qua bước
-            // chờ (await/setTimeout) nào trước đó, nếu không Safari sẽ âm thầm
-            // từ chối vì mất "cử chỉ người dùng".
-            nhanDienGiong = taoPhienNhanDienGiong();
-            try {
-                nhanDienGiong.start();
-            } catch (e) {
-                // InvalidStateError: phiên cũ chưa kịp đóng hẳn -> tạo phiên mới và yêu cầu bấm lại
-                dungMicroVeMacDinh();
-                nhanDienGiong = null;
-                datTrangThaiMicro('Ông bà bấm 🎤 lại giúp con nhé', false);
+            if (daTuChoiQuyen('micro')) {
+                datTrangThaiMicro('❌ Ông bà đã từ chối quyền Micro trước đó. Ông bà vào Cài đặt > Safari (hoặc Chrome) > Microphone để bật lại giúp con nhé', false);
+                return;
             }
+
+            // Nếu quyền micro đã CHẮC CHẮN được cấp từ trước (đã tự kiểm tra bằng
+            // getUserMedia ở màn "Cho phép Micro & Vị trí" hoặc lần nói trước đó
+            // thành công), gọi start() ngay lập tức và đồng bộ như cũ - cách nhanh
+            // và tương thích nhất trên iPhone.
+            if (daDuocCapQuyen('micro')) {
+                batDauPhienNgheThat();
+                return;
+            }
+
+            // Quyền micro CHƯA RÕ (chưa từng hỏi): chủ động gọi getUserMedia để
+            // Safari/Chrome thực sự hiện hộp thoại xin quyền - đây chính là bước
+            // còn thiếu trước đây khiến "cho phép rồi mà vẫn không ghi âm được":
+            // navigator.permissions.query('microphone') không được Safari hỗ trợ
+            // nên trước đây web không bao giờ thực sự yêu cầu quyền, mà chỉ dựa
+            // vào hộp thoại ẩn bên trong SpeechRecognition.start() (không ổn định
+            // trên iPhone, dễ bị coi là "not-allowed" ngay cả khi người dùng đã bấm
+            // Cho phép). Xin quyền tường minh trước, rồi mới bắt đầu nghe thật.
+            datTrangThaiMicro('🔓 Đang xin quyền Micro, ông bà chọn "Cho phép" ở hộp thoại nhé...', false);
+            if (!('mediaDevices' in navigator) || !navigator.mediaDevices.getUserMedia) {
+                // Trình duyệt quá cũ, không có getUserMedia -> đành thử thẳng qua SpeechRecognition
+                batDauPhienNgheThat();
+                return;
+            }
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(function (luong) {
+                luong.getTracks().forEach(function (t) { t.stop(); });
+                ghiNhoQuyen('micro', 'granted');
+                // Bắt đầu nghe ngay khi vừa được cấp quyền, trong cùng chuỗi thao tác
+                // của người dùng (không setTimeout) để giữ "cử chỉ người dùng" trên iPhone.
+                batDauPhienNgheThat();
+            }).catch(function (err) {
+                ghiNhoQuyen('micro', 'denied');
+                if (laChayKieuUngDungCaiSan()) {
+                    datTrangThaiMicro('❌ iPhone chặn mic khi mở từ biểu tượng màn hình chính. Ông bà mở bằng Safari để dùng mic nhé', false);
+                } else if (err && err.name === 'NotFoundError') {
+                    datTrangThaiMicro('⚠️ Không tìm thấy microphone, ông bà kiểm tra lại máy giúp con', false);
+                } else {
+                    datTrangThaiMicro('❌ Ông bà chưa cấp quyền Micro. Bấm 🎤 lần nữa và chọn "Cho phép" ở hộp thoại nhé', false);
+                }
+            });
         }
 
         // Nếu người dùng chuyển ứng dụng/khóa màn hình giữa chừng, Safari trên iPhone
@@ -1524,12 +1585,15 @@ Mỗi tin PHẢI trông như SMS/Zalo thật, ngắn 1-3 câu. Giai thich ngắn
             localStorage.setItem(KHOA_EMAIL_CON, email);
             document.getElementById('man-hinh-dang-ky-lan-dau').classList.remove('show');
             hienThiCaiDat();
+            kiemTraXinQuyen();
         }
 
         function kiemTraDangKyLanDau() {
             var email = localStorage.getItem(KHOA_EMAIL_CON);
             if (!email) {
                 document.getElementById('man-hinh-dang-ky-lan-dau').classList.add('show');
+            } else {
+                kiemTraXinQuyen();
             }
         }
 
@@ -1542,6 +1606,60 @@ Mỗi tin PHẢI trông như SMS/Zalo thật, ngắn 1-3 câu. Giai thich ngắn
         }
         function daTuChoiQuyen(ten) {
             return localStorage.getItem('qb_quyen_' + ten) === 'denied';
+        }
+        function daDuocCapQuyen(ten) {
+            return localStorage.getItem('qb_quyen_' + ten) === 'granted';
+        }
+
+        /* ===================================================================
+           XIN QUYỀN CHỦ ĐỘNG NGAY TỪ ĐẦU (micro + vị trí), có ghi nhớ lại
+           kết quả để không hỏi lại nhiều lần và để các màn hình khác (mic,
+           SOS) biết chắc trạng thái quyền mà không cần đoán.
+           Lưu ý: Safari trên iPhone KHÔNG hỗ trợ navigator.permissions.query
+           cho 'microphone' -> query() luôn ném lỗi và bị nuốt âm thầm, nên
+           không bao giờ thực sự hiện hộp thoại xin quyền micro trên iPhone.
+           getUserMedia() mới là cách DUY NHẤT thực sự bật hộp thoại đó.
+           =================================================================== */
+        function dongManXinQuyen() {
+            var m = document.getElementById('man-xin-quyen');
+            if (m) m.classList.remove('show');
+            try { localStorage.setItem('qb_da_hoi_quyen', '1'); } catch (e) { }
+        }
+
+        async function xinQuyenBanDau() {
+            var tt = document.getElementById('tt-xin-quyen');
+            var nutDongY = document.getElementById('nut-dong-y-xin-quyen');
+            if (nutDongY) nutDongY.disabled = true;
+            if (tt) tt.textContent = 'Đang xin quyền, ông bà chờ chút ạ...';
+
+            if ('mediaDevices' in navigator && navigator.mediaDevices.getUserMedia) {
+                try {
+                    var luong = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    // Chỉ xin quyền để "mở khoá" mic, không cần giữ luồng ghi âm này -
+                    // SpeechRecognition sẽ tự quản lý luồng riêng của nó khi bắt đầu nói.
+                    luong.getTracks().forEach(function (t) { t.stop(); });
+                    ghiNhoQuyen('micro', 'granted');
+                    if (tt) tt.textContent = '✅ Đã có quyền Micro!';
+                } catch (e) {
+                    ghiNhoQuyen('micro', 'denied');
+                    if (tt) tt.textContent = '⚠️ Chưa cấp quyền Micro. Ông bà vẫn có thể bấm 🎤 để thử lại sau.';
+                }
+            }
+
+            try { await layViTriHienTai(); } catch (e) { }
+
+            setTimeout(dongManXinQuyen, tt && tt.textContent.indexOf('✅') === 0 ? 700 : 1600);
+        }
+
+        function kiemTraXinQuyen() {
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition || !window.isSecureContext) return;
+            if (laChayKieuUngDungCaiSan() && laThietBiIOS()) return; // sẽ không xin được gì trong chế độ này
+            if (localStorage.getItem('qb_da_hoi_quyen')) return;
+            setTimeout(function () {
+                var m = document.getElementById('man-xin-quyen');
+                if (m) m.classList.add('show');
+            }, 500);
         }
 
         function layViTriHienTai() {
@@ -1868,38 +1986,6 @@ Mỗi tin PHẢI trông như SMS/Zalo thật, ngắn 1-3 câu. Giai thich ngắn
 
     </script>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyADdrrfHXyjkmVErjvvmaGBKiVTl9oZpBo",
-            authDomain: "tinhoctre-d01c1.firebaseapp.com",
-            projectId: "tinhoctre-d01c1",
-            storageBucket: "tinhoctre-d01c1.firebasestorage.app",
-            messagingSenderId: "86350384089",
-            appId: "1:86350384089:web:07a805155df4f22e77e7c8",
-            measurementId: "G-58MLMJB9GD"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const messaging = getMessaging(app);
-
-        async function dangKyThongBao() {
-            try {
-                const registration = await navigator.serviceWorker.register('sw.js');
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const token = await getToken(messaging, {
-                        vapidKey: 'BBbHt3b4NXiUYaArutvshtqgl1EJjRZwaIjP0xDr0ZqWkNGTnrL8YSxEeGIABDDEQa2GzAM3b5fwzYVyPkCId8s',
-                        serviceWorkerRegistration: registration
-                    });
-                    console.log("Token thiết bị của ông bà:", token);
-                }
-            } catch (err) { console.error("Lỗi đăng ký thông báo:", err); }
-        }
-        window.addEventListener('load', dangKyThongBao);
-    </script>
 </body>
 
 </html>
