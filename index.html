@@ -928,98 +928,185 @@ Quy tắc trả lời:
 - Nếu hỏi về sức khỏe khẩn cấp, khuyên gọi 115 hoặc người thân ngay
 - Trả lời bằng tiếng Việt`;
 
-        /* ===== NHẬN DIỆN GIỌNG NÓI ===== */
+        /* ===== NHẬN DIỆN GIỌNG NÓI (tối ưu tương thích iPhone/Safari) ===== */
         var nhanDienGiong = null;
         var dangNghe = false;
+        var soLanTuDongThuLai = 0;
+        var laDangDoiKetQuaCuoi = false;
 
-        function khoiTaoNhanDienGiong() {
-            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                document.getElementById('trang-thai-giong-noi').textContent = "Trình duyệt không hỗ trợ nhận diện giọng nói";
-                return false;
+        function laThietBiIOS() {
+            var ua = navigator.userAgent || '';
+            var laIOSKieuCu = /iPad|iPhone|iPod/.test(ua);
+            // iPadOS 13+ giả làm Mac nên phải kiểm tra thêm cảm ứng đa điểm
+            var laIPadMoi = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+            return laIOSKieuCu || laIPadMoi;
+        }
+
+        function laChayKieuUngDungCaiSan() {
+            // Safari trên iOS chặn hẳn quyền micro khi web đã được "Thêm vào MH chính"
+            return window.navigator.standalone === true ||
+                (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        }
+
+        function datTrangThaiMicro(vanBan, dangLangNghe) {
+            var label = document.getElementById('trang-thai-giong-noi');
+            if (!label) return;
+            label.textContent = vanBan;
+            label.classList.toggle('dang-nghe-text', !!dangLangNghe);
+        }
+
+        function dungMicroVeMacDinh() {
+            var btn = document.getElementById('nut-micro-btn');
+            if (btn) {
+                btn.classList.remove('dang-nghe');
+                btn.textContent = '🎤';
             }
-            nhanDienGiong = new SpeechRecognition();
-            nhanDienGiong.lang = 'vi-VN';
-            nhanDienGiong.continuous = false;
-            nhanDienGiong.interimResults = true;
-            nhanDienGiong.maxAlternatives = 1;
+            dangNghe = false;
+        }
 
-            nhanDienGiong.onstart = function () {
+        /* Luôn tạo một phiên nhận diện MỚI mỗi lần bấm mic.
+           Đây là điểm mấu chốt cho iPhone: Safari trên iOS rất hay bị "kẹt"
+           (báo lỗi liên tục) nếu dùng lại đối tượng SpeechRecognition cũ
+           sau khi nó đã kết thúc hoặc lỗi một lần. */
+        function taoPhienNhanDienGiong() {
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return null;
+
+            var phien = new SpeechRecognition();
+            phien.lang = 'vi-VN';
+            // continuous=true không ổn định trên Safari/iOS -> luôn để false
+            phien.continuous = false;
+            phien.interimResults = true;
+            phien.maxAlternatives = 1;
+
+            phien.onstart = function () {
                 dangNghe = true;
+                laDangDoiKetQuaCuoi = false;
                 var btn = document.getElementById('nut-micro-btn');
-                var label = document.getElementById('trang-thai-giong-noi');
-                btn.classList.add('dang-nghe');
-                btn.textContent = '⏹';
-                label.textContent = '🔴 Đang nghe... Ông bà nói đi ạ!';
-                label.classList.add('dang-nghe-text');
+                if (btn) { btn.classList.add('dang-nghe'); btn.textContent = '⏹'; }
+                datTrangThaiMicro('🔴 Đang nghe... Ông bà nói đi ạ!', true);
             };
 
-            nhanDienGiong.onresult = function (event) {
+            phien.onresult = function (event) {
                 var ketQua = '';
                 for (var i = event.resultIndex; i < event.results.length; i++) {
                     ketQua += event.results[i][0].transcript;
                 }
                 document.getElementById('cau-hoi-ai').value = ketQua;
                 if (event.results[event.results.length - 1].isFinal) {
-                    document.getElementById('trang-thai-giong-noi').textContent = '✅ Đã nhận: "' + ketQua + '"';
+                    laDangDoiKetQuaCuoi = true;
+                    datTrangThaiMicro('✅ Đã nhận: "' + ketQua + '"', false);
                 }
             };
 
-            nhanDienGiong.onerror = function (event) {
-                var btn = document.getElementById('nut-micro-btn');
-                var label = document.getElementById('trang-thai-giong-noi');
-                btn.classList.remove('dang-nghe');
-                btn.textContent = '🎤';
-                dangNghe = false;
-                if (event.error === 'not-allowed') {
+            phien.onerror = function (event) {
+                dungMicroVeMacDinh();
+                var loi = event.error;
+
+                // "aborted"/"no-speech" khi người dùng tự bấm dừng thì không cần báo lỗi to
+                if (loi === 'aborted') {
+                    var vbHienTai = document.getElementById('cau-hoi-ai').value.trim();
+                    datTrangThaiMicro(vbHienTai ? 'Bấm ➤ để gửi hoặc 🎤 để nói lại' : 'Bấm 🎤 để nói, AI sẽ trả lời ông bà', false);
+                    return;
+                }
+
+                if (loi === 'not-allowed' || loi === 'service-not-allowed') {
                     ghiNhoQuyen('micro', 'denied');
-                    label.textContent = '❌ Ông bà cần cho phép dùng microphone ạ';
-                } else if (event.error === 'no-speech') {
-                    label.textContent = '⚠️ Con chưa nghe thấy gì, ông bà thử lại nhé';
+                    if (laChayKieuUngDungCaiSan()) {
+                        datTrangThaiMicro('❌ iPhone chặn mic khi mở từ biểu tượng màn hình chính. Ông bà mở bằng trình duyệt Safari (Chrome/Safari) để dùng mic nhé', false);
+                    } else {
+                        datTrangThaiMicro('❌ Ông bà vào Cài đặt > Safari > Microphone để cho phép ạ', false);
+                    }
+                } else if (loi === 'no-speech') {
+                    datTrangThaiMicro('⚠️ Con chưa nghe thấy gì, ông bà bấm 🎤 và nói to hơn nhé', false);
+                } else if (loi === 'audio-capture') {
+                    datTrangThaiMicro('⚠️ Không tìm thấy microphone, ông bà kiểm tra lại máy giúp con', false);
+                } else if (loi === 'network') {
+                    // Lỗi "network" là lỗi phổ biến nhất trên Safari/iPhone khi nhận diện
+                    // giọng nói bị gọi dồn dập. Tự thử lại một lần bằng phiên hoàn toàn mới.
+                    if (soLanTuDongThuLai < 1) {
+                        soLanTuDongThuLai++;
+                        datTrangThaiMicro('🔄 Kết nối chập chờn, con đang thử lại...', false);
+                        setTimeout(function () {
+                            var phienMoi = taoPhienNhanDienGiong();
+                            if (!phienMoi) return;
+                            nhanDienGiong = phienMoi;
+                            try { nhanDienGiong.start(); } catch (e) { /* bỏ qua, chờ người dùng bấm lại */ }
+                        }, 400);
+                    } else {
+                        datTrangThaiMicro('⚠️ Mạng chập chờn, ông bà kiểm tra wifi/4G rồi bấm 🎤 lại nhé', false);
+                    }
                 } else {
-                    label.textContent = '⚠️ Lỗi nhận giọng nói, thử lại ạ';
+                    datTrangThaiMicro('⚠️ Lỗi nhận giọng nói, ông bà bấm 🎤 thử lại ạ', false);
                 }
-                label.classList.remove('dang-nghe-text');
             };
 
-            nhanDienGiong.onend = function () {
-                var btn = document.getElementById('nut-micro-btn');
-                var label = document.getElementById('trang-thai-giong-noi');
-                btn.classList.remove('dang-nghe');
-                btn.textContent = '🎤';
-                dangNghe = false;
+            phien.onend = function () {
+                dungMicroVeMacDinh();
                 ghiNhoQuyen('micro', 'granted');
+                soLanTuDongThuLai = 0;
+                if (laDangDoiKetQuaCuoi) return; // đã có thông báo "Đã nhận" từ onresult
                 var vanBan = document.getElementById('cau-hoi-ai').value.trim();
-                if (vanBan) {
-                    label.textContent = 'Bấm ➤ để gửi hoặc 🎤 để nói lại';
-                    label.classList.remove('dang-nghe-text');
-                } else {
-                    label.textContent = 'Bấm 🎤 để nói, AI sẽ trả lời ông bà';
-                    label.classList.remove('dang-nghe-text');
-                }
+                datTrangThaiMicro(vanBan ? 'Bấm ➤ để gửi hoặc 🎤 để nói lại' : 'Bấm 🎤 để nói, AI sẽ trả lời ông bà', false);
             };
 
-            return true;
+            return phien;
         }
 
         function batGiongNoi() {
-            if (!nhanDienGiong) {
-                var ok = khoiTaoNhanDienGiong();
-                if (!ok) return;
-            }
-            if (dangNghe) {
-                nhanDienGiong.stop();
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                datTrangThaiMicro('❌ Điện thoại này chưa hỗ trợ nhận diện giọng nói, ông bà gõ chữ giúp con nhé', false);
                 return;
             }
+
+            if (!window.isSecureContext) {
+                datTrangThaiMicro('❌ Cần mở web bằng địa chỉ https thì mic mới dùng được ạ', false);
+                return;
+            }
+
+            if (dangNghe && nhanDienGiong) {
+                try { nhanDienGiong.stop(); } catch (e) { dungMicroVeMacDinh(); }
+                return;
+            }
+
+            if (laChayKieuUngDungCaiSan() && laThietBiIOS()) {
+                datTrangThaiMicro('❌ iPhone chặn mic khi mở từ biểu tượng màn hình chính. Ông bà mở link này bằng Safari để dùng mic nhé', false);
+                return;
+            }
+
             document.getElementById('cau-hoi-ai').value = '';
+            soLanTuDongThuLai = 0;
+
+            // QUAN TRỌNG cho iPhone: phải gọi start() ngay lập tức, đồng bộ,
+            // trong đúng thao tác bấm nút của người dùng — không qua bước
+            // chờ (await/setTimeout) nào trước đó, nếu không Safari sẽ âm thầm
+            // từ chối vì mất "cử chỉ người dùng".
+            nhanDienGiong = taoPhienNhanDienGiong();
             try {
                 nhanDienGiong.start();
             } catch (e) {
+                // InvalidStateError: phiên cũ chưa kịp đóng hẳn -> tạo phiên mới và yêu cầu bấm lại
+                dungMicroVeMacDinh();
                 nhanDienGiong = null;
-                khoiTaoNhanDienGiong();
-                setTimeout(() => nhanDienGiong && nhanDienGiong.start(), 200);
+                datTrangThaiMicro('Ông bà bấm 🎤 lại giúp con nhé', false);
             }
         }
+
+        // Nếu người dùng chuyển ứng dụng/khóa màn hình giữa chừng, Safari trên iPhone
+        // có thể để mic ở trạng thái "đang nghe" ảo, gây lỗi ở lần bấm tiếp theo.
+        // Chủ động hủy phiên nhận diện khi trang bị ẩn đi.
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden && dangNghe && nhanDienGiong) {
+                try { nhanDienGiong.abort(); } catch (e) { /* bỏ qua */ }
+                dungMicroVeMacDinh();
+            }
+        });
+        window.addEventListener('pagehide', function () {
+            if (dangNghe && nhanDienGiong) {
+                try { nhanDienGiong.abort(); } catch (e) { /* bỏ qua */ }
+            }
+        });
 
         /* ===== GỌI OPENROUTER API (tương thích OpenAI) ===== */
         async function goiGeminiAPI(cauHoi) {
