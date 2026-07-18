@@ -943,6 +943,105 @@ Quy tắc trả lời:
 - Nếu hỏi về sức khỏe khẩn cấp, khuyên gọi 115 hoặc người thân ngay
 - Trả lời bằng tiếng Việt`;
 
+        /* ===== AI OFFLINE — Transformers.js (tương thích MỌI trình duyệt: Chrome, Safari, iOS, Firefox) ===== */
+        // Dùng WebAssembly thay WebGPU → chạy được trên iPhone/iPad/Safari/tất cả máy
+        // Model Qwen2-0.5B (~500MB), hỗ trợ tiếng Việt, tải 1 lần rồi cache mãi
+        const AI_OFFLINE_MODEL = "Xenova/Qwen2-0.5B-Instruct";
+        let _aiEngine = null;
+        let _aiTrangThai = 'chua_tai'; // 'chua_tai' | 'dang_tai' | 'san_sang' | 'loi'
+
+        // Kiểm tra mạng thực sự (không chỉ dựa vào navigator.onLine)
+        async function coMang() {
+            if (!navigator.onLine) return false;
+            try {
+                await fetch('https://1.1.1.1/cdn-cgi/trace', { method: 'HEAD', mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(3000) });
+                return true;
+            } catch { return false; }
+        }
+
+        // Định dạng messages theo chuẩn Qwen2 chat template
+        function dinhDangChatQwen(messages) {
+            var text = '';
+            messages.forEach(function(m) {
+                text += '<|im_start|>' + m.role + '\n' + m.content + '<|im_end|>\n';
+            });
+            text += '<|im_start|>assistant\n';
+            return text;
+        }
+
+        // Trích xuất phần AI trả lời (bỏ phần prompt đã đưa vào)
+        function trichXuatTraLoi(generated, prompt) {
+            var result = generated;
+            if (result.startsWith(prompt)) result = result.slice(prompt.length);
+            // Cắt ở token kết thúc
+            var endIdx = result.indexOf('<|im_end|>');
+            if (endIdx !== -1) result = result.slice(0, endIdx);
+            return result.trim();
+        }
+
+        // Khởi tạo Transformers.js (lazy — chỉ tải khi cần, cache vào trình duyệt)
+        async function khoiTaoAIOffline(cbTienTrinh) {
+            if (_aiTrangThai === 'san_sang') return true;
+            if (_aiTrangThai === 'dang_tai') {
+                return new Promise(function(resolve) {
+                    var check = setInterval(function() {
+                        if (_aiTrangThai === 'san_sang') { clearInterval(check); resolve(true); }
+                        if (_aiTrangThai === 'loi')      { clearInterval(check); resolve(false); }
+                    }, 600);
+                });
+            }
+            _aiTrangThai = 'dang_tai';
+            try {
+                // Import Transformers.js — dùng WASM, chạy được trên mọi máy
+                const { pipeline, env } = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2");
+
+                // Tối ưu cho iOS/Safari: dùng 1 luồng để tránh crash
+                var laIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                if (laIOS) env.backends.onnx.wasm.numThreads = 1;
+
+                // Tải model (lần đầu ~500MB, các lần sau dùng cache ngay)
+                _aiEngine = await pipeline('text-generation', AI_OFFLINE_MODEL, {
+                    progress_callback: function(p) {
+                        if (cbTienTrinh && p.status === 'progress') {
+                            var pct = p.progress ? Math.round(p.progress) + '%' : '';
+                            cbTienTrinh((p.file || 'Model') + ' ' + pct);
+                        }
+                    }
+                });
+                _aiTrangThai = 'san_sang';
+                return true;
+            } catch (e) {
+                console.error('[AI Offline] Lỗi:', e);
+                _aiTrangThai = 'loi';
+                return false;
+            }
+        }
+
+        // Gọi AI local (Transformers.js)
+        async function goiAILocal(messages, maxTokens) {
+            if (_aiTrangThai !== 'san_sang') throw new Error('AI offline chưa sẵn sàng');
+            var prompt = dinhDangChatQwen(messages);
+            var output = await _aiEngine(prompt, {
+                max_new_tokens: maxTokens || 250,
+                temperature: 0.7,
+                do_sample: true,
+                repetition_penalty: 1.1
+            });
+            var generated = output[0].generated_text;
+            return trichXuatTraLoi(generated, prompt);
+        }
+
+        // Tải model ngầm sau 8 giây khi có mạng (để không ảnh hưởng tải trang)
+        setTimeout(async function() {
+            var tiKiem = navigator.connection && navigator.connection.saveData;
+            if (navigator.onLine && !tiKiem) {
+                await khoiTaoAIOffline(function(text) {
+                    console.log('[AI Offline tải ngầm]', text);
+                });
+            }
+        }, 8000);
+
         /* ===== NHẬN DIỆN GIỌNG NÓI (tối ưu tương thích iPhone/Safari) ===== */
         var nhanDienGiong = null;
         var dangNghe = false;
@@ -1221,42 +1320,95 @@ Quy tắc trả lời:
             }
         });
 
-        /* ===== GỌI OPENROUTER API (tương thích OpenAI) ===== */
+        /* ===== GỌI AI (online → OpenRouter, offline → WebLLM local) ===== */
         async function goiGeminiAPI(cauHoi) {
-            var body = {
-                model: OR_MODEL,
-                messages: [
-                    { role: "system", content: SYSTEM_PROMPT },
-                    { role: "user", content: cauHoi }
-                ],
-                temperature: 0.7,
-                max_tokens: 400
-            };
-            var res = await fetch(OR_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + OR_API_KEY,
-                    'HTTP-Referer': 'https://silverdigital.app',
-                    'X-Title': 'Silver Digital'
-                },
-                body: JSON.stringify(body)
-            });
-            if (!res.ok) {
-                var errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error && errData.error.message ? errData.error.message : 'HTTP ' + res.status);
+            var messages = [
+                { role: "system", content: SYSTEM_PROMPT },
+                { role: "user", content: cauHoi }
+            ];
+
+            // Thử online trước
+            var online = await coMang();
+            if (online) {
+                try {
+                    var body = { model: OR_MODEL, messages: messages, temperature: 0.7, max_tokens: 400 };
+                    var res = await fetch(OR_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + OR_API_KEY,
+                            'HTTP-Referer': 'https://silverdigital.app',
+                            'X-Title': 'Silver Digital'
+                        },
+                        body: JSON.stringify(body),
+                        signal: AbortSignal.timeout(10000)
+                    });
+                    if (res.ok) {
+                        var data = await res.json();
+                        return data.choices[0].message.content.trim();
+                    }
+                } catch (e) {
+                    console.warn('[AI] Online thất bại, chuyển offline:', e.message);
+                }
             }
-            var data = await res.json();
-            return data.choices[0].message.content.trim();
+
+            // Offline hoặc online lỗi → dùng AI local (Transformers.js, WASM, mọi máy)
+            var typingEl2 = document.querySelector('.typing');
+            if (typingEl2) typingEl2.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div><span style="font-size:11px;color:#888;margin-left:6px;">🔌 Đang dùng AI offline…</span>';
+
+            if (_aiTrangThai !== 'san_sang') {
+                if (typingEl2) typingEl2.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div><span style="font-size:11px;color:#888;margin-left:6px;">⏳ Đang tải AI offline lần đầu (~500MB, chờ chút)…</span>';
+                var ok = await khoiTaoAIOffline(function(txt) {
+                    var sp = typingEl2 && typingEl2.querySelector('span');
+                    if (sp) sp.textContent = txt.length > 60 ? txt.slice(0, 60) + '…' : txt;
+                });
+                if (!ok) throw new Error('Không thể khởi động AI offline');
+            }
+
+            return await goiAILocal(messages, 300);
+        }
+
+        // Phân tích ý định đặt lịch bằng regex (dùng khi offline, không cần AI)
+        function phantichYDinhOffline(cauHoi) {
+            var s = cauHoi.toLowerCase();
+            // Tìm giờ dạng HH:MM hoặc "X giờ Y phút" hoặc "X giờ"
+            var gio = null;
+            var matchGio = s.match(/(\d{1,2})[:\s](\d{2})/);
+            if (matchGio) {
+                gio = matchGio[1].padStart(2,'0') + ':' + matchGio[2];
+            } else {
+                var matchGioNoi = s.match(/(\d{1,2})\s*gi[oờ]\s*(\d{1,2})?\s*ph[uú]t?/);
+                if (matchGioNoi) gio = matchGioNoi[1].padStart(2,'0') + ':' + (matchGioNoi[2]||'00').padStart(2,'0');
+                else {
+                    var matchGioDon = s.match(/(\d{1,2})\s*gi[oờ]/);
+                    if (matchGioDon) gio = matchGioDon[1].padStart(2,'0') + ':00';
+                }
+            }
+            // Kiểm tra từ khóa ngủ
+            var tuKhoaNgu = ['đi ngủ','giờ ngủ','lịch ngủ','nhắc ngủ','nhắc đi ngủ'];
+            if (tuKhoaNgu.some(t => s.includes(t)) && gio) return { loai: 'ngu', gio: gio };
+            // Kiểm tra từ khóa thuốc
+            var tuKhoaThuoc = ['uống thuốc','nhắc thuốc','lịch thuốc','đặt lịch thuốc','nhắc uống'];
+            if (tuKhoaThuoc.some(t => s.includes(t)) && gio) {
+                // Tìm tên thuốc (từ sau "thuốc" đến trước giờ)
+                var tenMatch = cauHoi.match(/thuốc\s+([^\d,\.]+?)(?:\s+lúc|\s+vào|\s+\d|$)/i);
+                var ten = tenMatch ? tenMatch[1].trim() : 'thuốc';
+                return { loai: 'thuoc', ten: ten, gio: gio };
+            }
+            return { loai: 'khong' };
         }
 
         async function phantichVaDatLich(cauHoi, vungChat) {
             try {
-                var body = {
-                    model: OR_MODEL,
-                    messages: [
-                        {
-                            role: "system", content: `Phân tích câu người dùng và trả về JSON thuần túy (không giải thích).
+                var intent = null;
+                var online = await coMang();
+                if (online) {
+                    try {
+                        var body = {
+                            model: OR_MODEL,
+                            messages: [
+                                {
+                                    role: "system", content: `Phân tích câu người dùng và trả về JSON thuần túy (không giải thích).
 
 Nếu muốn đặt lịch UỐNG THUỐC (phải có đủ tên thuốc VÀ giờ cụ thể dạng số):
 {"loai":"thuoc","ten":"tên thuốc","gio":"HH:MM"}
@@ -1267,26 +1419,30 @@ Nếu muốn đặt lịch ĐI NGỦ (phải có giờ cụ thể dạng số):
 Mọi trường hợp khác: {"loai":"khong"}
 
 Giờ phải là format 24h HH:MM. Thiếu giờ hoặc thiếu tên thuốc → trả "khong".` },
-                        { role: "user", content: cauHoi }
-                    ],
-                    temperature: 0,
-                    max_tokens: 60
-                };
-                var res = await fetch(OR_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + OR_API_KEY,
-                        'HTTP-Referer': 'https://silverdigital.app',
-                        'X-Title': 'Silver Digital'
-                    },
-                    body: JSON.stringify(body)
-                });
-                var data = await res.json();
-                var text = data.choices[0].message.content.trim();
-                var match = text.match(/\{[\s\S]*?\}/);
-                if (!match) return;
-                var intent = JSON.parse(match[0]);
+                                { role: "user", content: cauHoi }
+                            ],
+                            temperature: 0,
+                            max_tokens: 60
+                        };
+                        var res = await fetch(OR_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + OR_API_KEY,
+                                'HTTP-Referer': 'https://silverdigital.app',
+                                'X-Title': 'Silver Digital'
+                            },
+                            body: JSON.stringify(body),
+                            signal: AbortSignal.timeout(8000)
+                        });
+                        var data = await res.json();
+                        var text = data.choices[0].message.content.trim();
+                        var match = text.match(/\{[\s\S]*?\}/);
+                        if (match) intent = JSON.parse(match[0]);
+                    } catch(e) { intent = null; }
+                }
+                // Fallback regex offline khi không có mạng hoặc API lỗi
+                if (!intent) intent = phantichYDinhOffline(cauHoi);
 
                 if (intent.loai === 'thuoc' && intent.ten && intent.gio) {
                     dsThuoc.push({ ten: intent.ten, gio: intent.gio });
@@ -1347,7 +1503,9 @@ Giờ phải là format 24h HH:MM. Thiếu giờ hoặc thiếu tên thuốc →
                 noi(cauTraLoi.replace(/[*_#`]/g, ''));
             } catch (err) {
                 typingEl.remove();
-                var noiDungLoi = 'Dạ, xin lỗi ông bà, con chưa kết nối được mạng lúc này. Ông bà kiểm tra wifi rồi thử lại nhé ạ.';
+                var noiDungLoi = err && err.message && err.message.includes('offline')
+                    ? 'Dạ, con cần tải AI offline về máy lần đầu. Ông bà kết nối wifi một lần để con tải về nhé, sau đó dùng mãi không cần mạng ạ.'
+                    : 'Dạ, xin lỗi ông bà, con đang gặp sự cố. Ông bà thử lại sau nhé ạ.';
                 var botElLoi = document.createElement('div');
                 botElLoi.className = 'tin-nhan-bot';
                 botElLoi.textContent = '🤖 ' + noiDungLoi;
@@ -1456,6 +1614,16 @@ Giờ phải là format 24h HH:MM. Thiếu giờ hoặc thiếu tên thuốc →
             dangTaoTinNhan = true;
 
             const el = document.getElementById('noi-dung-tin');
+
+            // Kiểm tra mạng trước — nếu offline dùng danh sách dự phòng ngay
+            var online = await coMang();
+            if (!online) {
+                el.innerHTML = '<span style="color:#888;font-style:italic;">📴 Đang dùng tin nhắn mẫu (offline)</span>';
+                dangTaoTinNhan = false;
+                randomTinNhan();
+                return;
+            }
+
             el.innerHTML = '<span style="color:#888;font-style:italic;">⏳ AI đang tạo tin nhắn thực tế...</span>';
 
             try {
@@ -1485,7 +1653,8 @@ Mỗi tin PHẢI trông như SMS/Zalo thật, ngắn 1-3 câu. Giai thich ngắn
                         'HTTP-Referer': 'https://silverdigital.app',
                         'X-Title': 'Silver Digital'
                     },
-                    body: JSON.stringify(body)
+                    body: JSON.stringify(body),
+                    signal: AbortSignal.timeout(15000)
                 });
 
                 var data = await res.json();
