@@ -50,13 +50,23 @@ self.addEventListener('fetch', function(event) {
     // Bỏ qua các request không phải GET
     if (event.request.method !== 'GET') return;
 
-    // Các API cần mạng thực (AI, email) - thử mạng trước, nếu lỗi báo offline
+    // Các domain cần mạng thực — không cache (AI API, email, model downloads)
     const networkOnlyHosts = [
         'openrouter.ai',
         'api.emailjs.com',
-        'emailjs.com'
+        'emailjs.com',
+        '1.1.1.1',                  // kiểm tra mạng
+        'huggingface.co',           // Transformers.js model downloads
+        'cdn-lfs.huggingface.co',   // model file chunks
+        'cdn-lfs-us-1.huggingface.co'
     ];
-    if (networkOnlyHosts.some(host => url.hostname.includes(host))) {
+    // Các path CDN của Transformers.js — cho qua mạng để tải model về IndexedDB
+    const networkOnlyPaths = [
+        '/npm/@xenova/transformers',
+        '/npm/@huggingface/transformers'
+    ];
+    if (networkOnlyHosts.some(host => url.hostname.includes(host)) ||
+        networkOnlyPaths.some(p => url.pathname.includes(p))) {
         event.respondWith(
             fetch(event.request).catch(() => {
                 return new Response(
