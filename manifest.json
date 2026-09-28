@@ -2,7 +2,7 @@
     "name": "SILVER DIGITAL - Trợ Lý Của Ông Bà",
     "short_name": "Silver Digital",
     "description": "Ứng dụng trợ lý thông minh cho người cao tuổi",
-    "start_url": "./index.html",
+    "start_url": "https://tht-silverdigital-59ce4.web.app",
     "display": "standalone",
     "background_color": "#111217",
     "theme_color": "#007bff",
